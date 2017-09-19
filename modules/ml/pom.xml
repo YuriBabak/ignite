@@ -36,6 +36,9 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <netlibjava.version>1.1.2</netlibjava.version>
+        <encog-integration.folder>src/main/java</encog-integration.folder>
+        <encog-integration.test.folder>src/test/java</encog-integration.test.folder>
+        <encog.version>3.3.0</encog.version>
     </properties>
 
     <dependencies>
@@ -120,6 +123,23 @@
                 </dependency>
             </dependencies>
         </profile>
+
+        <profile>
+            <id>dl4j-integration</id>
+
+            <properties>
+                <encog-integration.folder>src/main/encog</encog-integration.folder>
+                <encog-integration.test.folder>src/test/encog</encog-integration.test.folder>
+            </properties>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.encog</groupId>
+                    <artifactId>encog-core</artifactId>
+                    <version>${encog.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
     </profiles>
 
     <build>
@@ -129,6 +149,44 @@
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${encog-integration.folder}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>add-tests</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${encog-integration.test.folder}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
                 </configuration>
             </plugin>
         </plugins>

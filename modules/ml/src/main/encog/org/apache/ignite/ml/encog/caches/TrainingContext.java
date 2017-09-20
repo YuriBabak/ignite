@@ -15,9 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.encog;
-/**
- * TODO: add description.
- */
-public class Population {
+package org.apache.ignite.ml.encog.caches;
+
+import org.encog.ml.ea.genome.GenomeFactory;
+
+public class TrainingContext {
+    private GenomeFactory factory;
+
+    public TrainingContext(GenomeFactory factory) {
+        this.factory = factory;
+    }
+
+    public GenomeFactory getFactory() {
+        return factory;
+    }
 }

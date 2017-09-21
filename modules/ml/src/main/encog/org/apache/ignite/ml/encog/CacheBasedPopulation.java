@@ -41,7 +41,7 @@ public class CacheBasedPopulation implements Population {
     public CacheBasedPopulation(UUID trainingUuid, Ignite ignite) {
         TrainingContext context = TrainingContextCache.getOrCreate(ignite).get(trainingUuid);
 
-        GenomeFactory factory = context.getFactory();
+        GenomeFactory factory = context.genomeFactory();
 
         pop = new BasicPopulation();
 
@@ -52,12 +52,9 @@ public class CacheBasedPopulation implements Population {
 
         Genome bestGenome = pop.getSpecies().get(0).getMembers().stream().max(Comparator.comparingDouble(Genome::getScore)).get();
 
-        // TODO
         pop.setBestGenome(bestGenome);
         pop.setGenomeFactory(factory);
-        // TODO
         pop.setName("Test");
-        // TODO
         pop.setPopulationSize(10);
     }
 

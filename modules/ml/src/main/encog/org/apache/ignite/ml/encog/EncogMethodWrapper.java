@@ -15,33 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.encog.caches;
+package org.apache.ignite.ml.encog;
 
-import org.encog.ml.MethodFactory;
-import org.encog.ml.data.MLDataSet;
-import org.encog.ml.ea.genome.GenomeFactory;
-import org.encog.ml.factory.MLMethodFactory;
+import org.apache.ignite.ml.Model;
+import org.encog.ml.MLRegression;
+import org.encog.ml.data.MLData;
 
-public class TrainingContext {
-    private final MethodFactory methodFactory;
-    private GenomeFactory factory;
-    private MLDataSet ds;
+public class EncogMethodWrapper implements Model<MLData, double[]> {
+    private MLRegression m;
 
-    public TrainingContext(GenomeFactory genomeFactory, MethodFactory mlMethodFactory, MLDataSet ds) {
-        this.factory = genomeFactory;
-        this.methodFactory = mlMethodFactory;
-        this.ds = ds;
+    public EncogMethodWrapper(MLRegression m) {
+        this.m = m;
     }
 
-    public GenomeFactory genomeFactory() {
-        return factory;
-    }
-
-    public MethodFactory getMlMethodFactory() {
-        return methodFactory;
-    }
-
-    public MLDataSet getDataset() {
-        return ds;
+    @Override public double[] predict(MLData val) {
+        return m.compute(val).getData();
     }
 }

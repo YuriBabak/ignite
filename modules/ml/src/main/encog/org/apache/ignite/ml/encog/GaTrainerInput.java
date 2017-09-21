@@ -15,33 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.encog.caches;
+package org.apache.ignite.ml.encog;
 
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.encog.ml.MLMethod;
 import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLDataSet;
-import org.encog.ml.ea.genome.GenomeFactory;
-import org.encog.ml.factory.MLMethodFactory;
 
-public class TrainingContext {
-    private final MethodFactory methodFactory;
-    private GenomeFactory factory;
-    private MLDataSet ds;
+public class GaTrainerInput<T extends MLMethod, MLEncodable> {
+    private MLDataSet mlDataSet;
+    private MethodFactory mf;
 
-    public TrainingContext(GenomeFactory genomeFactory, MethodFactory mlMethodFactory, MLDataSet ds) {
-        this.factory = genomeFactory;
-        this.methodFactory = mlMethodFactory;
-        this.ds = ds;
+    public GaTrainerInput(MLDataSet mlDataSet, IgniteSupplier<T> methodFactory) {
+        this.mlDataSet = mlDataSet;
+        mf = () -> methodFactory.get();
     }
 
-    public GenomeFactory genomeFactory() {
-        return factory;
+    public MLDataSet mlDataSet() {
+        return mlDataSet;
     }
 
-    public MethodFactory getMlMethodFactory() {
-        return methodFactory;
-    }
-
-    public MLDataSet getDataset() {
-        return ds;
+    public MethodFactory methodFactory() {
+        return mf;
     }
 }

@@ -15,33 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.encog.caches;
+package org.apache.ignite.ml.math.functions;
 
-import org.encog.ml.MethodFactory;
-import org.encog.ml.data.MLDataSet;
-import org.encog.ml.ea.genome.GenomeFactory;
-import org.encog.ml.factory.MLMethodFactory;
+import java.io.Serializable;
+import java.util.function.Supplier;
 
-public class TrainingContext {
-    private final MethodFactory methodFactory;
-    private GenomeFactory factory;
-    private MLDataSet ds;
-
-    public TrainingContext(GenomeFactory genomeFactory, MethodFactory mlMethodFactory, MLDataSet ds) {
-        this.factory = genomeFactory;
-        this.methodFactory = mlMethodFactory;
-        this.ds = ds;
-    }
-
-    public GenomeFactory genomeFactory() {
-        return factory;
-    }
-
-    public MethodFactory getMlMethodFactory() {
-        return methodFactory;
-    }
-
-    public MLDataSet getDataset() {
-        return ds;
-    }
+@FunctionalInterface
+public interface IgniteSupplier<T> extends Supplier<T>, Serializable {
 }

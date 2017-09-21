@@ -20,6 +20,7 @@ package org.apache.ignite.ml.encog;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -27,43 +28,81 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.encog.caches.GenomesCache;
+import org.apache.ignite.ml.encog.caches.TrainingContext;
+import org.apache.ignite.ml.encog.caches.TrainingContextCache;
+import org.apache.ignite.ml.math.distributed.CacheUtils;
+import org.encog.Encog;
+import org.encog.ml.MethodFactory;
+import org.encog.ml.data.MLData;
+import org.encog.ml.data.MLDataPair;
+import org.encog.ml.data.MLDataSet;
+import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 import org.encog.neural.networks.BasicNetwork;
+import org.encog.neural.networks.training.TrainingSetScore;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * TODO: add description.
  */
-public class GATrainer implements GroupTrainer {
+public class GATrainer implements GroupTrainer<MLData, double[], GaTrainerInput, EncogMethodWrapper> {
     public static String CACHE = "encog_nets";
 
     private Ignite ignite;
     private IgniteCache<IgniteBiTuple<UUID, Integer>, BasicNetwork> cache;
 
-
     public GATrainer(Ignite ignite) {
         this.ignite = ignite;
     }
 
-    @Override public Model train(Object input) {
+    @Override public EncogMethodWrapper train(GaTrainerInput input) {
         cache = newCache();
+
+        UUID trainingUUID = UUID.randomUUID();
+
+        // TODO: initialize genome factory
+        TrainingContextCache.getOrCreate(ignite).put(trainingUUID, new TrainingContext(null,
+            input.methodFactory(),
+            input.mlDataSet()));
 
         IgniteBiTuple<UUID, Integer> lead = null;
 
         execute(new InitTask(), null);
 
-        while(!isCompleted()) {
-            lead = execute(new GroupTrainerTask(), null);
+        // Here we seed the first generation and make first iteration of algorithm.
+        CacheUtils.bcast(GenomesCache.NAME, () -> GATrainer.initialIteration(trainingUUID));
 
+        while (!isCompleted()) {
+            lead = execute(new GroupTrainerTask(), null);
             execute(new UpdatePopulationTask(), lead);
         }
 
         return buildIgniteModel(lead);
     }
 
+    @NotNull private static void initialIteration(UUID trainingUUID) {
+        Ignite ignite = Ignition.localIgnite();
+
+        TrainingContext ctx = TrainingContextCache.getOrCreate(ignite).get(trainingUUID);
+        MLDataSet trainingSet = ctx.getDataset();
+        MethodFactory mtdFactory = ctx.getMlMethodFactory();
+        TrainingSetScore score = new TrainingSetScore(trainingSet);
+
+        MLMethodGeneticAlgorithm train = new MLMethodGeneticAlgorithm(mtdFactory, score, 100);
+
+        train.iteration();
+        System.out.println("Initial iteration");
+
+        train.finishTraining();
+
+        Encog.getInstance().shutdown();
+    }
+
     private <T, R> R execute(ComputeTask<T, R> task, T arg) {
         return ignite.compute(ignite.cluster().forCacheNodes(CACHE)).execute(task, arg);
     }
 
-    private Model buildIgniteModel(IgniteBiTuple<UUID, Integer> lead) {
+    private EncogMethodWrapper buildIgniteModel(IgniteBiTuple<UUID, Integer> lead) {
         return null; //TODO: impl
     }
 

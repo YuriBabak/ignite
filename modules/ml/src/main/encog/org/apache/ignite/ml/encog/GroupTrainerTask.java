@@ -43,11 +43,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GroupTrainerTask extends ComputeTaskAdapter<UUID, MLMethodGenome> {
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable UUID arg) throws IgniteException {
+        @Nullable UUID trainingUuid) throws IgniteException {
         Map<ComputeJob, ClusterNode> res = new HashMap<>();
 
         for (ClusterNode node : subgrid)
-            res.put(new LocalTrainingTickJob(), node);
+            res.put(new LocalTrainingTickJob(trainingUuid), node);
 
         return res;
     }

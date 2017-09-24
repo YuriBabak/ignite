@@ -120,7 +120,7 @@ public class GATrainer implements GroupTrainer<MLData, double[], GaTrainerInput,
     }
 
     private <T, R> R execute(ComputeTask<T, R> task, T arg) {
-        return ignite.compute(ignite.cluster().forCacheNodes(CACHE)).execute(task, arg);
+        return ignite.compute(ignite.cluster().forCacheNodes(GenomesCache.NAME)).execute(task, arg);
     }
 
     private EncogMethodWrapper buildIgniteModel(MLMethodGenome lead) {

@@ -24,13 +24,15 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.encog.ml.genetic.MLMethodGenome;
 
 public class GenomesCache {
     public static final String NAME = "GA_GENOMES_CACHE";
 
-    public static IgniteCache<UUID, MLMethodGenome> getOrCreate(Ignite ignite) {
-        CacheConfiguration<UUID, MLMethodGenome> cfg = new CacheConfiguration<>();
+    // The key of the cache is uuid of training and uuid of genome
+    public static IgniteCache<IgniteBiTuple<UUID, UUID>, MLMethodGenome> getOrCreate(Ignite ignite) {
+        CacheConfiguration<IgniteBiTuple<UUID, UUID>, MLMethodGenome> cfg = new CacheConfiguration<>();
 
         // Write to primary.
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);

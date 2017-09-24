@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.caches.TrainingContextCache;
@@ -45,8 +46,8 @@ public class CacheBasedPopulation implements Population {
 
         pop = new BasicPopulation();
 
-        for (Cache.Entry<UUID, MLMethodGenome> entry : GenomesCache.getOrCreate(ignite).localEntries()) {
-            if (entry.getKey().equals(trainingUuid))
+        for (Cache.Entry<IgniteBiTuple<UUID, UUID>, MLMethodGenome> entry : GenomesCache.getOrCreate(ignite).localEntries()) {
+            if (entry.getKey().get1().equals(trainingUuid))
                 pop.getSpecies().get(0).add(entry.getValue());
         }
 

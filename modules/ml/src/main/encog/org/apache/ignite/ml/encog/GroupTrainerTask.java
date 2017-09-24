@@ -17,16 +17,23 @@
 
 package org.apache.ignite.ml.encog;
 
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeLoadBalancer;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.resources.LoadBalancerResource;
+import org.encog.ml.genetic.MLMethodGenome;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -34,15 +41,19 @@ import org.jetbrains.annotations.Nullable;
  *
  * Train and choose leader.
  */
-public class GroupTrainerTask extends ComputeTaskAdapter<Matrix, IgniteBiTuple<UUID, Integer>>{
-
+public class GroupTrainerTask extends ComputeTaskAdapter<UUID, MLMethodGenome> {
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable Matrix arg) throws IgniteException {
-        return null;
+        @Nullable UUID arg) throws IgniteException {
+        Map<ComputeJob, ClusterNode> res = new HashMap<>();
+
+        for (ClusterNode node : subgrid)
+            res.put(new LocalTrainingTickJob(), node);
+
+        return res;
     }
 
     @Nullable @Override
-    public IgniteBiTuple<UUID, Integer> reduce(List<ComputeJobResult> results) throws IgniteException {
-        return null;
+    public MLMethodGenome reduce(List<ComputeJobResult> results) throws IgniteException {
+        return results.stream().max(Comparator.comparingDouble(res -> ((MLMethodGenome)res.getData()).getScore())).get().getData();
     }
 }

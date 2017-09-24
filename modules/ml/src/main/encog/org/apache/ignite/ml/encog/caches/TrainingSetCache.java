@@ -17,22 +17,43 @@
 
 package org.apache.ignite.ml.encog.caches;
 
+import java.util.ArrayList;
 import java.util.UUID;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.encog.ml.data.MLDataPair;
+import org.encog.ml.data.MLDataSet;
+import org.encog.ml.data.basic.BasicMLDataSet;
 
-public class TrainingContextCache {
-    public static final String NAME = "GA_TRAINING_CACHE";
+public class TrainingSetCache {
+    public static final String NAME = "TRAINING_SET_MAME";
 
-    public static IgniteCache<UUID, TrainingContext> getOrCreate(Ignite ignite) {
-        CacheConfiguration<UUID, TrainingContext> cfg = new CacheConfiguration<>();
+    public static MLDataSet getMLDataSet(Ignite ignite, UUID trainingUuid) {
+        // TODO: Maybe we should implement cache based dataset instead of reading it into list and initializing BasicMLDataset
+        int size = TrainingContextCache.getOrCreate(ignite).get(trainingUuid).datasetSize();
+
+        ArrayList<MLDataPair> lst = new ArrayList<>(size);
+
+        // TODO: Maybe SQL query would be more optimal.
+        for (Cache.Entry<IgniteBiTuple<UUID, Integer>, MLDataPair> entry : getOrCreate(ignite).localEntries()) {
+            if (entry.getKey().get1().equals(trainingUuid))
+                lst.add(entry.getValue());
+        }
+
+        return new BasicMLDataSet(lst);
+    }
+
+    public static IgniteCache<IgniteBiTuple<UUID, Integer>, MLDataPair> getOrCreate(Ignite ignite) {
+        CacheConfiguration<IgniteBiTuple<UUID, Integer>, MLDataPair> cfg = new CacheConfiguration<>();
 
         // Write to primary.
-        cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
 
         // Atomic transactions only.
         cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
@@ -44,7 +65,7 @@ public class TrainingContextCache {
         cfg.setCopyOnRead(false);
 
         // Cache is partitioned.
-        cfg.setCacheMode(CacheMode.REPLICATED);
+        cfg.setCacheMode(CacheMode.PARTITIONED);
 
         // Random cache name.
         cfg.setName(NAME);

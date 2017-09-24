@@ -31,13 +31,19 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.caches.TrainingContextCache;
+import org.apache.ignite.ml.encog.caches.TrainingSetCache;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
 import org.encog.Encog;
+import org.encog.ml.MLMethod;
 import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.MLDataSet;
+import org.encog.ml.ea.genome.Genome;
+import org.encog.ml.ea.genome.GenomeFactory;
+import org.encog.ml.factory.MLMethodFactory;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
+import org.encog.ml.genetic.MLMethodGenome;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.training.TrainingSetScore;
 import org.jetbrains.annotations.NotNull;
@@ -57,25 +63,36 @@ public class GATrainer implements GroupTrainer<MLData, double[], GaTrainerInput,
 
     @Override public EncogMethodWrapper train(GaTrainerInput input) {
         cache = newCache();
+        GenomesCache.getOrCreate(ignite);
 
         UUID trainingUUID = UUID.randomUUID();
 
         // TODO: initialize genome factory
-        TrainingContextCache.getOrCreate(ignite).put(trainingUUID, new TrainingContext(null,
+        TrainingContextCache.getOrCreate(ignite).put(trainingUUID, new TrainingContext(
+            new GenomeFactory() {
+                @Override public Genome factor() {
+                    return null;
+                }
+
+                @Override public Genome factor(Genome other) {
+                    return null;
+                }
+            },
             input.methodFactory(),
-            input.mlDataSet()));
+            input.mlDataSet().size()));
 
-        IgniteBiTuple<UUID, Integer> lead = null;
+        MLMethodGenome lead = null;
 
-        execute(new InitTask(), null);
+//        execute(new InitTask(), null);
 
         // Here we seed the first generation and make first iteration of algorithm.
         CacheUtils.bcast(GenomesCache.NAME, () -> GATrainer.initialIteration(trainingUUID));
 
-        while (!isCompleted()) {
+//        while (!isCompleted()) {
+
             lead = execute(new GroupTrainerTask(), null);
             execute(new UpdatePopulationTask(), lead);
-        }
+//        }
 
         return buildIgniteModel(lead);
     }
@@ -83,26 +100,30 @@ public class GATrainer implements GroupTrainer<MLData, double[], GaTrainerInput,
     @NotNull private static void initialIteration(UUID trainingUUID) {
         Ignite ignite = Ignition.localIgnite();
 
-        TrainingContext ctx = TrainingContextCache.getOrCreate(ignite).get(trainingUUID);
-        MLDataSet trainingSet = ctx.getDataset();
+        IgniteCache<UUID, TrainingContext> cache = TrainingContextCache.getOrCreate(ignite);
+        TrainingContext ctx = cache.get(trainingUUID);
+        MLDataSet trainingSet = TrainingSetCache.getMLDataSet(ignite, trainingUUID);
         MethodFactory mtdFactory = ctx.getMlMethodFactory();
         TrainingSetScore score = new TrainingSetScore(trainingSet);
 
         MLMethodGeneticAlgorithm train = new MLMethodGeneticAlgorithm(mtdFactory, score, 100);
 
+        long before = System.currentTimeMillis();
+        System.out.println("Doing Initial iteration");
+        train.setThreadCount(1);
         train.iteration();
-        System.out.println("Initial iteration");
+        System.out.println("Done in " + (System.currentTimeMillis() - before));
 
         train.finishTraining();
 
-        Encog.getInstance().shutdown();
+//        Encog.getInstance().shutdown();
     }
 
     private <T, R> R execute(ComputeTask<T, R> task, T arg) {
         return ignite.compute(ignite.cluster().forCacheNodes(CACHE)).execute(task, arg);
     }
 
-    private EncogMethodWrapper buildIgniteModel(IgniteBiTuple<UUID, Integer> lead) {
+    private EncogMethodWrapper buildIgniteModel(MLMethodGenome lead) {
         return null; //TODO: impl
     }
 

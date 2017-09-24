@@ -17,28 +17,15 @@
 
 package org.apache.ignite.ml.encog;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.compute.ComputeTaskAdapter;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.encog.ml.genetic.MLMethodGenome;
-import org.jetbrains.annotations.Nullable;
 
-/**
- * TODO: add description.
- */
-public class UpdatePopulationTask extends ComputeTaskAdapter<MLMethodGenome, Void> {
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable MLMethodGenome arg) throws IgniteException {
-        return null;
+public class LocalTrainingTickJob implements ComputeJob {
+    @Override public void cancel() {
+
     }
 
-    @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteException {
+    @Override public Object execute() throws IgniteException {
         return null;
     }
 }

@@ -24,7 +24,7 @@ import org.encog.ml.data.MLDataSet;
 
 public class GaTrainerInput<T extends MLMethod, MLEncodable> {
     private MLDataSet mlDataSet;
-    private MethodFactory mf;
+    private IgniteSupplier<T> mf;
 
     public GaTrainerInput(MLDataSet mlDataSet, IgniteSupplier<T> methodFactory) {
         this.mlDataSet = mlDataSet;
@@ -35,7 +35,7 @@ public class GaTrainerInput<T extends MLMethod, MLEncodable> {
         return mlDataSet;
     }
 
-    public MethodFactory methodFactory() {
+    public IgniteSupplier<T> methodFactory() {
         return mf;
     }
 }

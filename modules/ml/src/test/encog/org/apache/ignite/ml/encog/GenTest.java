@@ -17,11 +17,19 @@
 
 package org.apache.ignite.ml.encog;
 
+import java.io.IOException;
+import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.encog.ml.MethodFactory;
+import org.encog.ml.data.MLDataSet;
+import org.encog.ml.data.basic.BasicMLDataSet;
+import org.encog.neural.networks.BasicNetwork;
+import org.encog.neural.networks.layers.BasicLayer;
 import org.junit.Test;
 
 public class GenTest  extends GridCommonAbstractTest {
@@ -64,14 +72,37 @@ public class GenTest  extends GridCommonAbstractTest {
         IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName, rsrcs);
         configuration.setMarshaller(null);
         configuration.setIncludeEventTypes();
-        configuration.setPeerClassLoadingEnabled(false);
+        configuration.setPeerClassLoadingEnabled(true);
         configuration.setMetricsUpdateFrequency(2000);
 
         return configuration;
     }
 
     @Test
-    public void test() {
+    public void test() throws IOException {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        System.out.println("Reading mnist...");
+        MnistUtils.Pair<double[][], double[][]> mnist = MnistUtils.mnist("/home/enny/Downloads/train-images-idx3-ubyte", "/home/enny/Downloads/train-labels-idx1-ubyte", new Random(), 60_000);
+        System.out.println("Done");
+
+        // create training data
+        MLDataSet trainingSet = new BasicMLDataSet(mnist.fst, mnist.snd);
+        IgniteSupplier<BasicNetwork> fact = () -> {
+            BasicNetwork res = new BasicNetwork();
+            res.addLayer(new BasicLayer(null,true,2));
+            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,5));
+            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,1));
+            res.getStructure().finalizeStructure();
+
+            res.reset();
+            return res;
+        };
+
+        GaTrainerInput input = new GaTrainerInput(trainingSet, fact);
+
+        EncogMethodWrapper model = new GATrainer(ignite).train(input);
+
+//        model.predict();
     }
 }

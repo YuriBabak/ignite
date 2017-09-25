@@ -87,6 +87,7 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
 
         while (!isCompleted()){
             lead = execute(new GroupTrainerTask(), trainingUUID);
+            System.out.println("Iteration " + i + " complete");
 
             execute(new UpdatePopulationTask(), lead);
         }
@@ -108,7 +109,8 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
         long before = System.currentTimeMillis();
         System.out.println("Doing Initial iteration");
         train.setThreadCount(1);
-        train.iteration();
+        for (int i = 0; i < 3; i++)
+            train.iteration();
         System.out.println("Done in " + (System.currentTimeMillis() - before));
 
         train.finishTraining();

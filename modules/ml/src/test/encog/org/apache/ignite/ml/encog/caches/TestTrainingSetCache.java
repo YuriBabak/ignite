@@ -61,6 +61,8 @@ public class TestTrainingSetCache {
         // No copying of values.
         cfg.setCopyOnRead(false);
 
+        cfg.setOnheapCacheEnabled(true);
+
         // Cache is partitioned.
         cfg.setCacheMode(CacheMode.PARTITIONED);
 

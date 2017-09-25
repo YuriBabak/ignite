@@ -98,16 +98,16 @@ public class GenTest  extends GridCommonAbstractTest {
         // create training data
         IgniteSupplier<BasicNetwork> fact = () -> {
             BasicNetwork res = new BasicNetwork();
-            res.addLayer(new BasicLayer(null,true,2));
-            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,5));
-            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,1));
+            res.addLayer(new BasicLayer(null,true,28 * 28));
+            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,10));
+            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,10));
             res.getStructure().finalizeStructure();
 
             res.reset();
             return res;
         };
 
-        GaTrainerCacheInput<BasicNetwork> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME, fact, mnist.getFst().length);
+        GaTrainerCacheInput<BasicNetwork> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME, fact, mnist.getFst().length, 20);
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);
 
@@ -115,11 +115,14 @@ public class GenTest  extends GridCommonAbstractTest {
     }
 
     private void loadIntoCache(MnistUtils.Pair<double[][], double[][]> mnist) {
-        IgniteCache<Integer, MLDataPair> cache = TestTrainingSetCache.getOrCreate(ignite);
+        TestTrainingSetCache.getOrCreate(ignite);
 
         try (IgniteDataStreamer<Integer, MLDataPair> stmr = ignite.dataStreamer(TestTrainingSetCache.NAME)) {
             // Stream entries.
-            for (int i = 0; i < mnist.getFst().length; i++)
+
+            int samplesCnt = mnist.getFst().length;
+            System.out.println("Loading " + samplesCnt + " samples into cache...");
+            for (int i = 0; i < samplesCnt; i++)
                 stmr.addData(i, new BasicMLDataPair(new BasicMLData(mnist.fst[i]), new BasicMLData(mnist.snd[i])));
         }
     }

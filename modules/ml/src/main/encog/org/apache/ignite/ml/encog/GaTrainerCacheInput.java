@@ -36,15 +36,19 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable> implements GA
     private IgniteSupplier<T> mf;
     private String cacheName;
     private int size;
+    private int populationSize;
 
-    public GaTrainerCacheInput(String cacheName, IgniteSupplier<T> methodFactory, int size) {
+    public GaTrainerCacheInput(String cacheName, IgniteSupplier<T> methodFactory, int size, int populationSize) {
         this.cacheName = cacheName;
         mf = () -> methodFactory.get();
         this.size = size;
+        this.populationSize = populationSize;
     }
 
     @Override public MLDataSet mlDataSet(Ignite ignite) {
         IgniteCache<Integer, MLDataPair> cache = ignite.getOrCreateCache(cacheName);
+
+        System.out.println("Cache size: " + cache.size());
 
         ArrayList<MLDataPair> lst = new ArrayList<>();
 
@@ -60,5 +64,9 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable> implements GA
 
     @Override public int trainingSetSize() {
         return size;
+    }
+
+    @Override public int populationSize() {
+        return populationSize;
     }
 }

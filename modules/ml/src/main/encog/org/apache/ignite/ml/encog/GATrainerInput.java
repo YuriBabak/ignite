@@ -33,4 +33,6 @@ public interface GATrainerInput<T extends MLMethod & MLEncodable> {
     IgniteSupplier<T> methodFactory();
 
     int trainingSetSize();
+
+    int populationSize();
 }

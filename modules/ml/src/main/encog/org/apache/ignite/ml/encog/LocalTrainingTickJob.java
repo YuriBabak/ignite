@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.encog;
 
+import java.util.Comparator;
 import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
@@ -29,10 +30,13 @@ import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.caches.TrainingContextCache;
 import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLDataSet;
+import org.encog.ml.ea.genome.Genome;
 import org.encog.ml.ea.genome.GenomeFactory;
 import org.encog.ml.ea.population.BasicPopulation;
+import org.encog.ml.ea.species.Species;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 import org.encog.ml.genetic.MLMethodGenome;
+import org.encog.ml.genetic.MLMethodGenomeFactory;
 import org.encog.neural.networks.training.TrainingSetScore;
 
 public class LocalTrainingTickJob implements ComputeJob {
@@ -58,17 +62,27 @@ public class LocalTrainingTickJob implements ComputeJob {
         // TODO: temporary we filter genomes for the current training in this simple way. Better to make SQL query by training uuid.
         int genomesCnt = 0;
 
+        Species species = population.createSpecies();
+
         for (Cache.Entry<IgniteBiTuple<UUID, UUID>, MLMethodGenome> entry : GenomesCache.getOrCreate(ignite).localEntries()) {
             if (entry.getKey().get1().equals(trainingUuid)) {
-                population.createSpecies().add(entry.getValue());
+                species.add(entry.getValue());
                 genomesCnt++;
             }
         }
 
+        species.getMembers().sort(Comparator.comparing(Genome::getScore));
+
+        species.setLeader(species.getMembers().get(0));
+
         TrainingContext ctx = TrainingContextCache.getOrCreate(ignite).get(trainingUuid);
 
-        GenomeFactory genomeFactory = ctx.genomeFactory();
-        population.setGenomeFactory(genomeFactory);
+//        species.setOffspringCount(genomesCnt);
+
+        population.setPopulationSize(genomesCnt);
+
+        population.setGenomeFactory(new MLMethodGenomeFactory(ctx.getMlMethodFactory(),
+            population));
 
         MethodFactory mlMethodFactory = ctx.getMlMethodFactory();
 
@@ -77,8 +91,16 @@ public class LocalTrainingTickJob implements ComputeJob {
 
         MLMethodGeneticAlgorithm training = new MLMethodGeneticAlgorithm(mlMethodFactory, score, genomesCnt);
 
+        training.setThreadCount(1);
+
+        training.getGenetic().setPopulation(population);
+
         // TODO: maybe we should do several iterations here.
         training.iteration();
+
+        int newSize = training.getGenetic().getPopulation().getSpecies().get(0).getMembers().size();
+
+        System.out.println("New population size: " + newSize);
 
         training.finishTraining();
 

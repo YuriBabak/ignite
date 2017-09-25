@@ -52,7 +52,7 @@ public class MnistUtils {
 
         int numOfPixels = imgHeight * imgWidth;
 
-        numOfImages /= 6;
+        numOfImages /= 60;
 
         System.out.println("Magic: " + magic);
         System.out.println("Num of images: " + numOfImages);

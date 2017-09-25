@@ -17,25 +17,20 @@
 
 package org.apache.ignite.ml.encog;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.encog.ml.MLEncodable;
 import org.encog.ml.MLMethod;
-import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLDataSet;
 
-public class GaTrainerInput<T extends MLMethod, MLEncodable> {
-    private MLDataSet mlDataSet;
-    private IgniteSupplier<T> mf;
+public interface GATrainerInput<T extends MLMethod & MLEncodable> {
+    /**
+     * Returns dataset which is used as a training set on each of trainer nodes.
+     * @return Dataset which is used as a training set on each of trainer nodes.
+     */
+    MLDataSet mlDataSet(Ignite ignite);
 
-    public GaTrainerInput(MLDataSet mlDataSet, IgniteSupplier<T> methodFactory) {
-        this.mlDataSet = mlDataSet;
-        mf = () -> methodFactory.get();
-    }
+    IgniteSupplier<T> methodFactory();
 
-    public MLDataSet mlDataSet() {
-        return mlDataSet;
-    }
-
-    public IgniteSupplier<T> methodFactory() {
-        return mf;
-    }
+    int trainingSetSize();
 }

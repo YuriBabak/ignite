@@ -18,7 +18,9 @@
 package org.apache.ignite.ml.encog.caches;
 
 import java.io.Serializable;
+import org.apache.ignite.ml.encog.GATrainerInput;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.encog.ml.MLEncodable;
 import org.encog.ml.MLMethod;
 import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLDataSet;
@@ -29,14 +31,15 @@ public class TrainingContext implements Serializable {
     private IgniteSupplier<MLMethod> methodFactory;
     private GenomeFactory factory;
     private int datasetSize;
+    private GATrainerInput<? extends MLMethod> input;
 
     public TrainingContext() {
 
     }
 
-    public TrainingContext(GenomeFactory genomeFactory, IgniteSupplier<MLMethod> mlMethodFactory, int datasetSize) {
+    public TrainingContext(GenomeFactory genomeFactory, GATrainerInput<? extends MLMethod> input) {
         this.factory = genomeFactory;
-        this.methodFactory = mlMethodFactory;
+        this.input = input;
         this.datasetSize = datasetSize;
     }
 
@@ -46,11 +49,16 @@ public class TrainingContext implements Serializable {
     }
 
     public MethodFactory getMlMethodFactory() {
-        return () -> methodFactory.get();
+//        return () -> methodFactory.get();
+        return () -> input.methodFactory().get();
 //        return null;
     }
 
     public int datasetSize() {
         return datasetSize;
+    }
+
+    public GATrainerInput<? extends MLMethod> input() {
+        return input;
     }
 }

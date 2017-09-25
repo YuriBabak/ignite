@@ -31,8 +31,8 @@ import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.MLDataSet;
 import org.encog.ml.data.basic.BasicMLDataSet;
 
-public class TrainingSetCache {
-    public static final String NAME = "TRAINING_SET_MAME";
+public class TestTrainingSetCache {
+    public static final String NAME = "TEST_TRAINING_SET_MAME";
 
     public static MLDataSet getMLDataSet(Ignite ignite, UUID trainingUuid) {
         // TODO: Maybe we should implement cache based dataset instead of reading it into list and initializing BasicMLDataset
@@ -40,17 +40,14 @@ public class TrainingSetCache {
 
         ArrayList<MLDataPair> lst = new ArrayList<>(size);
 
-        // TODO: Maybe SQL query would be more optimal.
-        for (Cache.Entry<IgniteBiTuple<UUID, Integer>, MLDataPair> entry : getOrCreate(ignite).localEntries()) {
-            if (entry.getKey().get1().equals(trainingUuid))
-                lst.add(entry.getValue());
-        }
+        for (Cache.Entry<Integer, MLDataPair> entry : getOrCreate(ignite).localEntries())
+            lst.add(entry.getValue());
 
         return new BasicMLDataSet(lst);
     }
 
-    public static IgniteCache<IgniteBiTuple<UUID, Integer>, MLDataPair> getOrCreate(Ignite ignite) {
-        CacheConfiguration<IgniteBiTuple<UUID, Integer>, MLDataPair> cfg = new CacheConfiguration<>();
+    public static IgniteCache<Integer, MLDataPair> getOrCreate(Ignite ignite) {
+        CacheConfiguration<Integer, MLDataPair> cfg = new CacheConfiguration<>();
 
         // Write to primary.
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);

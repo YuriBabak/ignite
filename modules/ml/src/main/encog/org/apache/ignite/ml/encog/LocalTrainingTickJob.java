@@ -27,7 +27,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.caches.TrainingContextCache;
-import org.apache.ignite.ml.encog.caches.TrainingSetCache;
 import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLDataSet;
 import org.encog.ml.ea.genome.GenomeFactory;
@@ -73,7 +72,7 @@ public class LocalTrainingTickJob implements ComputeJob {
 
         MethodFactory mlMethodFactory = ctx.getMlMethodFactory();
 
-        MLDataSet trainingSet = TrainingSetCache.getMLDataSet(ignite, trainingUuid);
+        MLDataSet trainingSet = ctx.input().mlDataSet(ignite);
         TrainingSetScore score = new TrainingSetScore(trainingSet);
 
         MLMethodGeneticAlgorithm training = new MLMethodGeneticAlgorithm(mlMethodFactory, score, genomesCnt);
@@ -88,6 +87,8 @@ public class LocalTrainingTickJob implements ComputeJob {
         // These fields should not be serialized.
         locallyBest.setPopulation(null);
         locallyBest.setSpecies(null);
+
+        System.out.println("Locally best score is " + locallyBest.getScore());
 
         return locallyBest;
     }

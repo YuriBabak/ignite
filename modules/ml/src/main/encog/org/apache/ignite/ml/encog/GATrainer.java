@@ -30,8 +30,8 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.caches.TrainingContextCache;
-import org.apache.ignite.ml.encog.caches.TrainingSetCache;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
+import org.encog.ml.MLMethod;
 import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataSet;
@@ -46,7 +46,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * TODO: add description.
  */
-public class GATrainer implements GroupTrainer<MLData, double[], GaTrainerInput, EncogMethodWrapper> {
+public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<? extends MLMethod>, EncogMethodWrapper> {
     public static String CACHE = "encog_nets";
 
     private Ignite ignite;
@@ -58,7 +58,7 @@ public class GATrainer implements GroupTrainer<MLData, double[], GaTrainerInput,
         this.ignite = ignite;
     }
 
-    @Override public EncogMethodWrapper train(GaTrainerInput input) {
+    @Override public EncogMethodWrapper train(GATrainerInput<? extends MLMethod> input) {
         cache = newCache();
         GenomesCache.getOrCreate(ignite);
 
@@ -75,8 +75,7 @@ public class GATrainer implements GroupTrainer<MLData, double[], GaTrainerInput,
                     return null;
                 }
             },
-            input.methodFactory(),
-            input.mlDataSet().size()));
+            input));
 
         MLMethodGenome lead = null;
 
@@ -100,8 +99,8 @@ public class GATrainer implements GroupTrainer<MLData, double[], GaTrainerInput,
 
         IgniteCache<UUID, TrainingContext> cache = TrainingContextCache.getOrCreate(ignite);
         TrainingContext ctx = cache.get(trainingUUID);
-        MLDataSet trainingSet = TrainingSetCache.getMLDataSet(ignite, trainingUUID);
-        MethodFactory mtdFactory = ctx.getMlMethodFactory();
+        MLDataSet trainingSet = ctx.input().mlDataSet(ignite);
+        MethodFactory mtdFactory = () -> ctx.input().methodFactory().get();
         TrainingSetScore score = new TrainingSetScore(trainingSet);
 
         MLMethodGeneticAlgorithm train = new MLMethodGeneticAlgorithm(mtdFactory, score, 100);

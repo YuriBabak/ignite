@@ -114,6 +114,17 @@ public class GATrainer implements GroupTrainer<MLData, double[], GaTrainerInput,
 
         train.finishTraining();
 
+        // Load all genomes into cache
+        for (Genome genome : train.getGenetic().getPopulation().getSpecies().get(0).getMembers()) {
+            MLMethodGenome typedGenome = (MLMethodGenome)genome;
+
+            // These fields should not be serialized.
+            typedGenome.setPopulation(null);
+            typedGenome.setSpecies(null);
+
+            GenomesCache.getOrCreate(ignite).put(new IgniteBiTuple<>(trainingUUID, UUID.randomUUID()), typedGenome);
+        }
+
 //        Encog.getInstance().shutdown();
     }
 

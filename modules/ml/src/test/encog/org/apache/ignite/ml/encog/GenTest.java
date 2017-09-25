@@ -32,7 +32,7 @@ import org.encog.neural.networks.layers.BasicLayer;
 import org.junit.Test;
 
 public class GenTest  extends GridCommonAbstractTest {
-    public static final String MNIST_LOCATION = "C:/Users/Yury/Downloads/mnist/";
+    public static final String MNIST_LOCATION = "/home/enny/Downloads/";
     private static final int NODE_COUNT = 4;
 
     /** Grid instance. */
@@ -70,7 +70,6 @@ public class GenTest  extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName,
         IgniteTestResources rsrcs) throws Exception {
         IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName, rsrcs);
-        configuration.setMarshaller(null);
         configuration.setIncludeEventTypes();
         configuration.setPeerClassLoadingEnabled(true);
         configuration.setMetricsUpdateFrequency(2000);

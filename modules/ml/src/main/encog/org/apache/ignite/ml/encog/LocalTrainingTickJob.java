@@ -58,6 +58,7 @@ public class LocalTrainingTickJob implements ComputeJob {
 
         // TODO: temporary we filter genomes for the current training in this simple way. Better to make SQL query by training uuid.
         int genomesCnt = 0;
+
         for (Cache.Entry<IgniteBiTuple<UUID, UUID>, MLMethodGenome> entry : GenomesCache.getOrCreate(ignite).localEntries()) {
             if (entry.getKey().get1().equals(trainingUuid)) {
                 population.createSpecies().add(entry.getValue());
@@ -82,6 +83,12 @@ public class LocalTrainingTickJob implements ComputeJob {
 
         training.finishTraining();
 
-        return (MLMethodGenome)training.getGenetic().getBestGenome();
+        MLMethodGenome locallyBest = (MLMethodGenome)training.getGenetic().getBestGenome();
+
+        // These fields should not be serialized.
+        locallyBest.setPopulation(null);
+        locallyBest.setSpecies(null);
+
+        return locallyBest;
     }
 }

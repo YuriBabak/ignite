@@ -125,7 +125,7 @@
         </profile>
 
         <profile>
-            <id>dl4j-integration</id>
+            <id>encog-integration</id>
 
             <properties>
                 <encog-integration.folder>src/main/encog</encog-integration.folder>

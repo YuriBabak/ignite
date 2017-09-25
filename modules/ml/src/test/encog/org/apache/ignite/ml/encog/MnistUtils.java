@@ -15,16 +15,9 @@ package org.apache.ignite.ml.encog;/*
  * limitations under the License.
  */
 
-
 import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Random;
-import java.util.stream.Stream;
 
 public class MnistUtils {
     public static class Pair<F, S> {
@@ -59,10 +52,11 @@ public class MnistUtils {
 
         int numOfPixels = imgHeight * imgWidth;
 
+        numOfImages /= 6;
+
         System.out.println("Magic: " + magic);
         System.out.println("Num of images: " + numOfImages);
         System.out.println("Num of pixels: " + numOfPixels);
-
 
         Pair<double[][], double[][]> res = new Pair<>(new double[numOfImages][numOfPixels], new double[numOfImages][10]);
 

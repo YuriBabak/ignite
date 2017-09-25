@@ -27,21 +27,16 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.caches.TrainingContextCache;
 import org.apache.ignite.ml.encog.caches.TrainingSetCache;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
-import org.encog.Encog;
-import org.encog.ml.MLMethod;
 import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLData;
-import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.MLDataSet;
 import org.encog.ml.ea.genome.Genome;
 import org.encog.ml.ea.genome.GenomeFactory;
-import org.encog.ml.factory.MLMethodFactory;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 import org.encog.ml.genetic.MLMethodGenome;
 import org.encog.neural.networks.BasicNetwork;
@@ -56,6 +51,8 @@ public class GATrainer implements GroupTrainer<MLData, double[], GaTrainerInput,
 
     private Ignite ignite;
     private IgniteCache<IgniteBiTuple<UUID, Integer>, BasicNetwork> cache;
+
+    int i = 0;
 
     public GATrainer(Ignite ignite) {
         this.ignite = ignite;
@@ -83,16 +80,17 @@ public class GATrainer implements GroupTrainer<MLData, double[], GaTrainerInput,
 
         MLMethodGenome lead = null;
 
-//        execute(new InitTask(), null);
-
         // Here we seed the first generation and make first iteration of algorithm.
         CacheUtils.bcast(GenomesCache.NAME, () -> GATrainer.initialIteration(trainingUUID));
 
-//        while (!isCompleted()) {
+        lead = execute(new GroupTrainerTask(), trainingUUID);
+        execute(new UpdatePopulationTask(), lead);
 
-            lead = execute(new GroupTrainerTask(), null);
+        while (!isCompleted()){
+            lead = execute(new GroupTrainerTask(), trainingUUID);
+
             execute(new UpdatePopulationTask(), lead);
-//        }
+        }
 
         return buildIgniteModel(lead);
     }
@@ -128,7 +126,7 @@ public class GATrainer implements GroupTrainer<MLData, double[], GaTrainerInput,
     }
 
     private boolean isCompleted() {
-        return true; //TODO: impl
+        return i++ == 100; //TODO: impl
     }
 
     /** */

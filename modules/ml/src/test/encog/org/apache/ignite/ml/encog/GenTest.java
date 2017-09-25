@@ -25,7 +25,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLDataSet;
 import org.encog.ml.data.basic.BasicMLDataSet;
 import org.encog.neural.networks.BasicNetwork;
@@ -33,6 +32,7 @@ import org.encog.neural.networks.layers.BasicLayer;
 import org.junit.Test;
 
 public class GenTest  extends GridCommonAbstractTest {
+    public static final String MNIST_LOCATION = "C:/Users/Yury/Downloads/mnist/";
     private static final int NODE_COUNT = 4;
 
     /** Grid instance. */
@@ -83,7 +83,7 @@ public class GenTest  extends GridCommonAbstractTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         System.out.println("Reading mnist...");
-        MnistUtils.Pair<double[][], double[][]> mnist = MnistUtils.mnist("/home/enny/Downloads/train-images-idx3-ubyte", "/home/enny/Downloads/train-labels-idx1-ubyte", new Random(), 60_000);
+        MnistUtils.Pair<double[][], double[][]> mnist = MnistUtils.mnist(MNIST_LOCATION + "train-images-idx3-ubyte", MNIST_LOCATION + "train-labels-idx1-ubyte", new Random(), 60_000);
         System.out.println("Done");
 
         // create training data

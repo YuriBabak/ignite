@@ -19,33 +19,33 @@ package org.apache.ignite.ml.encog;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
 import org.apache.ignite.ml.encog.evolution.operators.Hillclimb;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
+import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.evolution.replacement.ReplaceLoserwWithLeadStrategy;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataPair;
-import org.encog.ml.data.MLDataSet;
 import org.encog.ml.data.basic.BasicMLData;
 import org.encog.ml.data.basic.BasicMLDataPair;
-import org.encog.ml.data.basic.BasicMLDataSet;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.TrainingSetScore;
 import org.junit.Test;
 
 public class GenTest  extends GridCommonAbstractTest {
-    public static final String MNIST_LOCATION = "/home/enny/Downloads/";
+    public static final String MNIST_LOCATION = "/home/ybabak/Downloads/mnist/";
     private static final int NODE_COUNT = 2;
 
     /** Grid instance. */
@@ -114,7 +114,7 @@ public class GenTest  extends GridCommonAbstractTest {
             return res;
         };
 
-        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(new Hillclimb(0.1));
+        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(new WeightMutation(0.1), new Hillclimb(0.1));
 
         GaTrainerCacheInput<BasicNetwork> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
@@ -127,7 +127,7 @@ public class GenTest  extends GridCommonAbstractTest {
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);
 
-//        model.predict();
+        ErrorCalculation(model);
     }
 
     private void loadIntoCache(MnistUtils.Pair<double[][], double[][]> mnist) {
@@ -141,5 +141,34 @@ public class GenTest  extends GridCommonAbstractTest {
             for (int i = 0; i < samplesCnt; i++)
                 stmr.addData(i, new BasicMLDataPair(new BasicMLData(mnist.fst[i]), new BasicMLData(mnist.snd[i])));
         }
+    }
+
+    private void ErrorCalculation(EncogMethodWrapper model) throws IOException {
+        MnistUtils.Pair<double[][], double[][]> testMnistData = MnistUtils.mnist(MNIST_LOCATION + "t10k-images-idx3-ubyte", MNIST_LOCATION + "t10k-labels-idx1-ubyte", new Random(), 10_000);
+
+        IgniteBiFunction<Model<MLData, double[]>, MnistUtils.Pair<double[][], double[][]>, Double> errorsPercentage = errorsPercentage();
+        Double accuracy = errorsPercentage.apply(model, testMnistData);
+        System.out.println(">>> Errs percentage: " + accuracy);
+    }
+
+    private IgniteBiFunction<Model<MLData, double[]>, MnistUtils.Pair<double[][],double[][]>, Double> errorsPercentage(){
+        return (model, pair) -> {
+            long total = 0l;
+            long count = 0l;
+
+            double[][] k = pair.getFst();
+            double[][] v = pair.getSnd();
+
+            assert k.length == v.length;
+
+            for (int i = 0; i < k.length; i++) {
+                total++;
+
+                if(!Arrays.equals(model.predict(new BasicMLData(k[i])), v[i]))
+                    count++;
+            }
+
+            return (double) count / total;
+        };
     }
 }

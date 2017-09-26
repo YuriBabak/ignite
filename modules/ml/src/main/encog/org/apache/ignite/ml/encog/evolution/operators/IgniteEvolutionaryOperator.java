@@ -21,14 +21,20 @@ import java.io.Serializable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.encog.ml.ea.opp.EvolutionaryOperator;
+import org.encog.ml.ea.train.EvolutionaryAlgorithm;
 
 public abstract class IgniteEvolutionaryOperator implements EvolutionaryOperator, Serializable {
     private TrainingContext ctx;
     private Ignite ignite;
     private double prob;
+    private EvolutionaryAlgorithm owner;
 
     public IgniteEvolutionaryOperator(double prob) {
         this.prob = prob;
+    }
+
+    @Override public void init(EvolutionaryAlgorithm theOwner) {
+        this.owner = theOwner;
     }
 
     public void setContext(TrainingContext ctx) {

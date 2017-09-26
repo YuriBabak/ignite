@@ -19,17 +19,13 @@ package org.apache.ignite.ml.encog;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.encog.caches.TrainingContextCache;
 import org.apache.ignite.ml.encog.evolution.replacement.UpdateStrategy;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.encog.ml.MLEncodable;
 import org.encog.ml.MLMethod;
-import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.MLDataSet;
 import org.encog.ml.data.basic.BasicMLDataSet;
@@ -40,12 +36,16 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable> implements GA
     private String cacheName;
     private int size;
     private int populationSize;
+    private List<EvolutionaryOperator> evolutionaryOperators;
+    private UpdateStrategy updateStrategy;
 
-    public GaTrainerCacheInput(String cacheName, IgniteSupplier<T> methodFactory, int size, int populationSize) {
+    public GaTrainerCacheInput(String cacheName, IgniteSupplier<T> mtdFactory, int size, int populationSize, List<EvolutionaryOperator> evolutionaryOperators, UpdateStrategy updateStrategy) {
         this.cacheName = cacheName;
-        mf = () -> methodFactory.get();
+        mf = () -> mtdFactory.get();
         this.size = size;
         this.populationSize = populationSize;
+        this.evolutionaryOperators = evolutionaryOperators;
+        this.updateStrategy = updateStrategy;
     }
 
     @Override public MLDataSet mlDataSet(Ignite ignite) {
@@ -74,10 +74,10 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable> implements GA
     }
 
     @Override public List<EvolutionaryOperator> evolutionaryOperators() {
-        return null;
+        return evolutionaryOperators;
     }
 
     @Override public UpdateStrategy replaceStrategy() {
-        return null;
+        return updateStrategy;
     }
 }

@@ -17,10 +17,11 @@
 
 package org.apache.ignite.ml.encog.evolution.replacement;
 
+import java.io.Serializable;
 import java.util.List;
 import org.encog.ml.ea.genome.Genome;
 import org.encog.ml.ea.population.Population;
 
-public interface UpdateStrategy {
+public interface UpdateStrategy extends Serializable {
     List<Genome> getNewGenomes(Population population, Genome globalLeader);
 }

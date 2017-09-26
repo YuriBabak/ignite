@@ -17,12 +17,32 @@
 
 package org.apache.ignite.ml.encog.evolution.replacement;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.encog.ml.ea.genome.Genome;
 import org.encog.ml.ea.population.Population;
 
 public class ReplaceLoserwWithLeadStrategy implements UpdateStrategy {
+    private double replacePercentage;
+
+    public ReplaceLoserwWithLeadStrategy(double replacePercentage) {
+        this.replacePercentage = replacePercentage;
+    }
+
     @Override public List<Genome> getNewGenomes(Population population, Genome best) {
-        return null;
+        int size = population.getPopulationSize();
+        int cntToReplace = (int)(size * replacePercentage);
+
+        int i = 0;
+        List<Genome> res = new ArrayList<>(size);
+
+        for (Genome genome : population.getSpecies().get(0).getMembers()) {
+            if (i < cntToReplace)
+                res.add(best);
+            else
+                res.add(genome);
+        }
+
+        return res;
     }
 }

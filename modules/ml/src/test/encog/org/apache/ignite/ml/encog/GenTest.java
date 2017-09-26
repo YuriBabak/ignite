@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.encog;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -25,6 +26,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
+import org.apache.ignite.ml.encog.evolution.replacement.ReplaceLoserwWithLeadStrategy;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -107,7 +109,12 @@ public class GenTest  extends GridCommonAbstractTest {
             return res;
         };
 
-        GaTrainerCacheInput<BasicNetwork> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME, fact, mnist.getFst().length, 20);
+        GaTrainerCacheInput<BasicNetwork> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
+            fact,
+            mnist.getFst().length,
+            20,
+            Collections.emptyList(),
+            new ReplaceLoserwWithLeadStrategy(0.5));
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);
 

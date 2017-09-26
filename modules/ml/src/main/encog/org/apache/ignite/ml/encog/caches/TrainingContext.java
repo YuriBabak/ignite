@@ -28,34 +28,14 @@ import org.encog.ml.ea.genome.GenomeFactory;
 import org.encog.ml.factory.MLMethodFactory;
 
 public class TrainingContext implements Serializable {
-    private IgniteSupplier<MLMethod> methodFactory;
-    private GenomeFactory factory;
-    private int datasetSize;
     private GATrainerInput<? extends MLMethod> input;
 
     public TrainingContext() {
 
     }
 
-    public TrainingContext(GenomeFactory genomeFactory, GATrainerInput<? extends MLMethod> input) {
-        this.factory = genomeFactory;
+    public TrainingContext(GATrainerInput<? extends MLMethod> input) {
         this.input = input;
-        this.datasetSize = datasetSize;
-    }
-
-    public GenomeFactory genomeFactory() {
-        return factory;
-//        return null;
-    }
-
-    public MethodFactory getMlMethodFactory() {
-//        return () -> methodFactory.get();
-        return () -> input.methodFactory().get();
-//        return null;
-    }
-
-    public int datasetSize() {
-        return datasetSize;
     }
 
     public GATrainerInput<? extends MLMethod> input() {

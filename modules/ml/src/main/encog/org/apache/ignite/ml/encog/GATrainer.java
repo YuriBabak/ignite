@@ -65,17 +65,7 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
         UUID trainingUUID = UUID.randomUUID();
 
         // TODO: initialize genome factory
-        TrainingContextCache.getOrCreate(ignite).put(trainingUUID, new TrainingContext(
-            new GenomeFactory() {
-                @Override public Genome factor() {
-                    return null;
-                }
-
-                @Override public Genome factor(Genome other) {
-                    return null;
-                }
-            },
-            input));
+        TrainingContextCache.getOrCreate(ignite).put(trainingUUID, new TrainingContext(input));
 
         MLMethodGenome lead = null;
 
@@ -87,7 +77,7 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
 
         while (!isCompleted()){
             lead = execute(new GroupTrainerTask(), trainingUUID);
-            System.out.println("Iteration " + i + " complete");
+            System.out.println("Iteration " + i + " complete, globally best score is " + lead.getScore());
 
             execute(new UpdatePopulationTask(), lead);
         }

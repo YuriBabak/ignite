@@ -26,7 +26,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.MLDataSet;
 import org.encog.ml.data.basic.BasicMLDataSet;
@@ -36,7 +35,7 @@ public class TestTrainingSetCache {
 
     public static MLDataSet getMLDataSet(Ignite ignite, UUID trainingUuid) {
         // TODO: Maybe we should implement cache based dataset instead of reading it into list and initializing BasicMLDataset
-        int size = TrainingContextCache.getOrCreate(ignite).get(trainingUuid).datasetSize();
+        int size = TrainingContextCache.getOrCreate(ignite).get(trainingUuid).input().datasetSize();
 
         ArrayList<MLDataPair> lst = new ArrayList<>(size);
 

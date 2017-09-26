@@ -62,7 +62,7 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable> implements GA
         return mf;
     }
 
-    @Override public int trainingSetSize() {
+    @Override public int datasetSize() {
         return size;
     }
 

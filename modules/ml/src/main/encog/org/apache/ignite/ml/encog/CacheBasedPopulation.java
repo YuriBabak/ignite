@@ -42,8 +42,6 @@ public class CacheBasedPopulation implements Population {
     public CacheBasedPopulation(UUID trainingUuid, Ignite ignite) {
         TrainingContext context = TrainingContextCache.getOrCreate(ignite).get(trainingUuid);
 
-        GenomeFactory factory = context.genomeFactory();
-
         pop = new BasicPopulation();
 
         for (Cache.Entry<IgniteBiTuple<UUID, UUID>, MLMethodGenome> entry : GenomesCache.getOrCreate(ignite).localEntries()) {
@@ -54,7 +52,7 @@ public class CacheBasedPopulation implements Population {
         Genome bestGenome = pop.getSpecies().get(0).getMembers().stream().max(Comparator.comparingDouble(Genome::getScore)).get();
 
         pop.setBestGenome(bestGenome);
-        pop.setGenomeFactory(factory);
+//        pop.setGenomeFactory(factory);
         pop.setName("Test");
         pop.setPopulationSize(10);
     }

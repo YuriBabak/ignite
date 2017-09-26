@@ -31,7 +31,6 @@ import org.apache.ignite.ml.encog.caches.TrainingContextCache;
 import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLDataSet;
 import org.encog.ml.ea.genome.Genome;
-import org.encog.ml.ea.genome.GenomeFactory;
 import org.encog.ml.ea.population.BasicPopulation;
 import org.encog.ml.ea.species.Species;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
@@ -72,26 +71,18 @@ public class LocalTrainingTickJob implements ComputeJob {
         }
 
         species.getMembers().sort(Comparator.comparing(Genome::getScore));
-
         species.setLeader(species.getMembers().get(0));
-
-        TrainingContext ctx = TrainingContextCache.getOrCreate(ignite).get(trainingUuid);
-
-//        species.setOffspringCount(genomesCnt);
 
         population.setPopulationSize(genomesCnt);
 
-        population.setGenomeFactory(new MLMethodGenomeFactory(ctx.getMlMethodFactory(),
-            population));
-
-        MethodFactory mlMethodFactory = ctx.getMlMethodFactory();
+        TrainingContext ctx = TrainingContextCache.getOrCreate(ignite).get(trainingUuid);
+        MethodFactory mlMtdFactory = () -> ctx.input().methodFactory().get();
+        population.setGenomeFactory(new MLMethodGenomeFactory(mlMtdFactory, population));
 
         MLDataSet trainingSet = ctx.input().mlDataSet(ignite);
         TrainingSetScore score = new TrainingSetScore(trainingSet);
 
-        MLMethodGeneticAlgorithm training = new MLMethodGeneticAlgorithm(mlMethodFactory, score, genomesCnt);
-
-        training.setThreadCount(1);
+        MLMethodGeneticAlgorithm training = new MLMethodGeneticAlgorithm(mlMtdFactory, score, genomesCnt);
 
         training.getGenetic().setPopulation(population);
 

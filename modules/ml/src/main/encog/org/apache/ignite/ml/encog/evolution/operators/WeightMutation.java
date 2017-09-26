@@ -18,19 +18,23 @@
 package org.apache.ignite.ml.encog.evolution.operators;
 
 import java.util.Random;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.encog.ml.ea.genome.Genome;
 import org.encog.ml.genetic.MLMethodGenome;
-import org.encog.neural.flat.FlatNetwork;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.ContainsFlat;
 
-public class Hillclimb extends IgniteEvolutionaryOperator {
+/**
+ * TODO: add description.
+ */
+public class WeightMutation extends IgniteEvolutionaryOperator {
 
-    public Hillclimb(double prob) {
+
+    public WeightMutation(double prob){
         super(prob);
     }
+
+
 
     @Override public int offspringProduced() {
         return 1;
@@ -42,21 +46,20 @@ public class Hillclimb extends IgniteEvolutionaryOperator {
 
     @Override public void performOperation(Random rnd, Genome[] parents, int parentIndex, Genome[] offspring,
         int offspringIndex) {
-        Ignite ignite = ignite();
         TrainingContext ctx = context();
 
-        ContainsFlat parent = (ContainsFlat)((MLMethodGenome)parents[0]).getPhenotype();
-        double[] gradient = new GradientCalculator(parent, ctx.input().mlDataSet(ignite)).gradient();
-        FlatNetwork off = parent.getFlat().clone();
+        double weightShift = rnd.nextDouble();
 
-        double[] weights = off.getWeights();
+        ContainsFlat parent = (ContainsFlat)((MLMethodGenome)parents[parentIndex]).getPhenotype();
+
+        double[] weights = parent.getFlat().getWeights().clone();
 
         for (int i = 0; i < weights.length; i++)
-            weights[i] += gradient[i];
+            weights[i] += weightShift;
 
         BasicNetwork res = (BasicNetwork)ctx.input().methodFactory().get();
         res.decodeFromArray(weights);
 
-        offspring[0] = new MLMethodGenome(res);
+        offspring[parentIndex] = new MLMethodGenome(res);
     }
 }

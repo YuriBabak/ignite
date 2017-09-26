@@ -138,7 +138,7 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
     }
 
     private boolean isCompleted() {
-        return iteration++ == 100; //TODO: impl
+        return iteration++ == 30; //TODO: impl
     }
 
     /** */

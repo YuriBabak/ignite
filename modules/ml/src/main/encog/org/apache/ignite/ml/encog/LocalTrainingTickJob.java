@@ -25,6 +25,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.caches.TrainingContextCache;
+import org.encog.Encog;
 import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLDataSet;
 import org.encog.ml.ea.population.Population;
@@ -63,8 +64,11 @@ public class LocalTrainingTickJob implements ComputeJob {
 
         training.getGenetic().setPopulation(population);
 
-        // TODO: maybe we should do several iterations here.
-        training.iteration();
+        int i = 0;
+        while (i < ctx.input().iterationsPerLocalTick()) {
+            training.iteration();
+            i++;
+        }
 
         int newSize = training.getGenetic().getPopulation().getSpecies().get(0).getMembers().size();
 
@@ -80,7 +84,13 @@ public class LocalTrainingTickJob implements ComputeJob {
 
         System.out.println("Locally best score is " + locallyBest.getScore());
 
+        int oldSize = GenomesCache.getOrCreate(ignite).size();
+
         locPop.rewrite(training.getGenetic().getPopulation());
+
+        System.out.println("CS: " + oldSize + "," + GenomesCache.getOrCreate(ignite).size());
+
+        Encog.getInstance().shutdown();
 
         return locallyBest;
     }

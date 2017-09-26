@@ -41,7 +41,7 @@ import org.junit.Test;
 
 public class GenTest  extends GridCommonAbstractTest {
     public static final String MNIST_LOCATION = "/home/enny/Downloads/";
-    private static final int NODE_COUNT = 4;
+    private static final int NODE_COUNT = 2;
 
     /** Grid instance. */
     protected Ignite ignite;
@@ -101,7 +101,7 @@ public class GenTest  extends GridCommonAbstractTest {
         IgniteSupplier<BasicNetwork> fact = () -> {
             BasicNetwork res = new BasicNetwork();
             res.addLayer(new BasicLayer(null,true,28 * 28));
-            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,10));
+            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,30));
             res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,10));
             res.getStructure().finalizeStructure();
 
@@ -112,9 +112,9 @@ public class GenTest  extends GridCommonAbstractTest {
         GaTrainerCacheInput<BasicNetwork> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
             mnist.getFst().length,
-            20,
+            100,
             Collections.emptyList(),
-            new ReplaceLoserwWithLeadStrategy(0.5));
+            new ReplaceLoserwWithLeadStrategy(0.5), 1);
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);
 

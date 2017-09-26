@@ -98,7 +98,7 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
         MethodFactory mtdFactory = () -> ctx.input().methodFactory().get();
         TrainingSetScore score = new TrainingSetScore(trainingSet);
 
-        MLMethodGeneticAlgorithm train = new MLMethodGeneticAlgorithm(mtdFactory, score, 100);
+        MLMethodGeneticAlgorithm train = new MLMethodGeneticAlgorithm(mtdFactory, score, ctx.input().populationSize());
 
         long before = System.currentTimeMillis();
         System.out.println("Doing Initial iteration");

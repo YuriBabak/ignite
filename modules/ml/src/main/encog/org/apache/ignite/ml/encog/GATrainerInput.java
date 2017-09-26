@@ -42,4 +42,8 @@ public interface GATrainerInput<T extends MLMethod & MLEncodable> {
     List<EvolutionaryOperator> evolutionaryOperators();
 
     UpdateStrategy replaceStrategy();
+
+    default int iterationsPerLocalTick() {
+        return 1;
+    }
 }

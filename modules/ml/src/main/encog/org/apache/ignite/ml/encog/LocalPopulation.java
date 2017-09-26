@@ -83,8 +83,7 @@ public class LocalPopulation {
         return population;
     }
 
-    public void rewrite(Population pop) {
-        List<Genome> toSave = pop.getSpecies().get(0).getMembers();
+    public void rewrite(List<Genome> toSave) {
         assert toSave.size() == localKeys.size();
 
         Map<IgniteBiTuple<UUID, UUID>, MLMethodGenome> m = new HashMap<>();

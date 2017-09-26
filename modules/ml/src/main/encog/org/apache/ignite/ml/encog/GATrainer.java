@@ -92,6 +92,8 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
         Population population = GenomesCache.localPopulation(trainingUUID, ignite).get();
 
         List<Genome> newGenomes = TrainingContextCache.getOrCreate(ignite).get(trainingUUID).input().replaceStrategy().getNewGenomes(population, lead);
+
+        GenomesCache.localPopulation(trainingUUID, ignite).rewrite(newGenomes);
     }
 
     @NotNull private static void initialIteration(UUID trainingUUID) {

@@ -86,7 +86,7 @@ public class LocalTrainingTickJob implements ComputeJob {
 
         int oldSize = GenomesCache.getOrCreate(ignite).size();
 
-        locPop.rewrite(training.getGenetic().getPopulation());
+        locPop.rewrite(training.getGenetic().getPopulation().getSpecies().get(0).getMembers());
 
         System.out.println("CS: " + oldSize + "," + GenomesCache.getOrCreate(ignite).size());
 

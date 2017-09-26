@@ -19,9 +19,11 @@ package org.apache.ignite.ml.encog;
 
 import java.util.List;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.evolution.replacement.UpdateStrategy;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.encog.ml.CalculateScore;
 import org.encog.ml.MLEncodable;
 import org.encog.ml.MLMethod;
 import org.encog.ml.data.MLDataSet;
@@ -47,4 +49,6 @@ public interface GATrainerInput<T extends MLMethod & MLEncodable> {
     default int iterationsPerLocalTick() {
         return 1;
     }
+
+    CalculateScore scoreCalculator(TrainingContext ctx, Ignite ignite);
 }

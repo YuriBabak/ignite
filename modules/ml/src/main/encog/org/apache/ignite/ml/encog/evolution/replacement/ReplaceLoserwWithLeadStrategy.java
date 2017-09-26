@@ -37,7 +37,8 @@ public class ReplaceLoserwWithLeadStrategy implements UpdateStrategy {
         List<Genome> res = new ArrayList<>(size);
 
         for (Genome genome : population.getSpecies().get(0).getMembers()) {
-            if (i < cntToReplace)
+            // TODO: '>' or '<' should be decided depending on 'shouldMinimize' of CalculateScore.
+            if (i > cntToReplace)
                 res.add(best);
             else
                 res.add(genome);

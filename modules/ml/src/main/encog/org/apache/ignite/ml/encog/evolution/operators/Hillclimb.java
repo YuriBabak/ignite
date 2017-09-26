@@ -28,7 +28,6 @@ import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.ContainsFlat;
 
 public class Hillclimb extends IgniteEvolutionaryOperator {
-
     public Hillclimb(double prob) {
         super(prob);
     }
@@ -50,7 +49,7 @@ public class Hillclimb extends IgniteEvolutionaryOperator {
         Ignite ignite = ignite();
         TrainingContext ctx = context();
 
-        ContainsFlat parent = (ContainsFlat)((MLMethodGenome)parents[0]).getPhenotype();
+        ContainsFlat parent = (ContainsFlat)((MLMethodGenome)parents[parentIndex]).getPhenotype();
         double[] gradient = new GradientCalculator(parent, ctx.input().mlDataSet(ignite)).gradient();
         FlatNetwork off = parent.getFlat().clone();
 
@@ -62,6 +61,6 @@ public class Hillclimb extends IgniteEvolutionaryOperator {
         BasicNetwork res = (BasicNetwork)ctx.input().methodFactory().get();
         res.decodeFromArray(weights);
 
-        offspring[0] = new MLMethodGenome(res);
+        offspring[offspringIndex] = new MLMethodGenome(res);
     }
 }

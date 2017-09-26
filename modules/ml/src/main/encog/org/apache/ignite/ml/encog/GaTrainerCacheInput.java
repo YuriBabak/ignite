@@ -22,17 +22,21 @@ import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.evolution.replacement.UpdateStrategy;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.encog.ml.CalculateScore;
 import org.encog.ml.MLEncodable;
 import org.encog.ml.MLMethod;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.MLDataSet;
 import org.encog.ml.data.basic.BasicMLDataSet;
-import org.encog.ml.ea.opp.EvolutionaryOperator;
 
 public class GaTrainerCacheInput<T extends MLMethod & MLEncodable> implements GATrainerInput<T> {
+    private final IgniteBiFunction<TrainingContext, Ignite, CalculateScore> scoreCalculatorSupplier;
     private IgniteSupplier<T> mf;
     private String cacheName;
     private int size;
@@ -41,7 +45,13 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable> implements GA
     private UpdateStrategy updateStrategy;
     private int iterationsPerLocalTick;
 
-    public GaTrainerCacheInput(String cacheName, IgniteSupplier<T> mtdFactory, int size, int populationSize, List<IgniteEvolutionaryOperator> evolutionaryOperators, UpdateStrategy updateStrategy, int iterationsPerLocalTick) {
+    public GaTrainerCacheInput(String cacheName,
+        IgniteSupplier<T> mtdFactory,
+        int size,
+        int populationSize,
+        List<IgniteEvolutionaryOperator> evolutionaryOperators, UpdateStrategy updateStrategy,
+        int iterationsPerLocalTick,
+        IgniteBiFunction<TrainingContext, Ignite, CalculateScore> scoreCalculator) {
         this.cacheName = cacheName;
         mf = () -> mtdFactory.get();
         this.size = size;
@@ -49,6 +59,7 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable> implements GA
         this.evolutionaryOperators = evolutionaryOperators;
         this.updateStrategy = updateStrategy;
         this.iterationsPerLocalTick = iterationsPerLocalTick;
+        this.scoreCalculatorSupplier = scoreCalculator;
     }
 
     @Override public MLDataSet mlDataSet(Ignite ignite) {
@@ -86,5 +97,9 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable> implements GA
 
     @Override public int iterationsPerLocalTick() {
         return iterationsPerLocalTick;
+    }
+
+    @Override public CalculateScore scoreCalculator(TrainingContext ctx, Ignite ignite) {
+        return scoreCalculatorSupplier.apply(ctx, ignite);
     }
 }

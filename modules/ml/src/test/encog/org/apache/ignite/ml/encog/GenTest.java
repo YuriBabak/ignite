@@ -41,6 +41,7 @@ import org.encog.ml.data.basic.BasicMLDataPair;
 import org.encog.ml.data.basic.BasicMLDataSet;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
+import org.encog.neural.networks.training.TrainingSetScore;
 import org.junit.Test;
 
 public class GenTest  extends GridCommonAbstractTest {
@@ -120,7 +121,9 @@ public class GenTest  extends GridCommonAbstractTest {
             mnist.getFst().length,
             100,
             evoOps,
-            new ReplaceLoserwWithLeadStrategy(0.5), 1);
+            new ReplaceLoserwWithLeadStrategy(0.5),
+            1,
+            (ctx, ignite) -> new TrainingSetScore(ctx.input().mlDataSet(ignite)));
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);
 

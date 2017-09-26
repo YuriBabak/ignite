@@ -31,6 +31,7 @@ import org.apache.ignite.compute.ComputeLoadBalancer;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
+import org.apache.ignite.ml.encog.caches.TrainingContextCache;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.resources.LoadBalancerResource;
 import org.encog.ml.genetic.MLMethodGenome;
@@ -54,6 +55,7 @@ public class GroupTrainerTask extends ComputeTaskAdapter<UUID, MLMethodGenome> {
 
     @Nullable @Override
     public MLMethodGenome reduce(List<ComputeJobResult> results) throws IgniteException {
-        return results.stream().max(Comparator.comparingDouble(res -> ((MLMethodGenome)res.getData()).getScore())).get().getData();
+        // TODO: Here we should do min or max depending on 'shouldMinimize' of CalculateScore
+        return results.stream().min(Comparator.comparingDouble(res -> ((MLMethodGenome)res.getData()).getScore())).get().getData();
     }
 }

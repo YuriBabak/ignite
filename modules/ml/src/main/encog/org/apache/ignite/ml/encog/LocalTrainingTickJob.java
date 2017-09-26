@@ -28,6 +28,7 @@ import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.caches.TrainingContextCache;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.encog.Encog;
+import org.encog.ml.CalculateScore;
 import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLDataSet;
 import org.encog.ml.ea.population.Population;
@@ -59,8 +60,7 @@ public class LocalTrainingTickJob implements ComputeJob {
         TrainingContext ctx = TrainingContextCache.getOrCreate(ignite).get(trainingUuid);
         MethodFactory mlMtdFactory = () -> ctx.input().methodFactory().get();
 
-        MLDataSet trainingSet = ctx.input().mlDataSet(ignite);
-        TrainingSetScore score = new TrainingSetScore(trainingSet);
+        CalculateScore score = ctx.input().scoreCalculator(ctx, ignite);
 
         MLMethodGeneticAlgorithm training = new MLMethodGeneticAlgorithm(mlMtdFactory, score, population.getSpecies().get(0).getMembers().size());
 

@@ -38,20 +38,22 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable> implements GA
     private int populationSize;
     private List<EvolutionaryOperator> evolutionaryOperators;
     private UpdateStrategy updateStrategy;
+    private int iterationsPerLocalTick;
 
-    public GaTrainerCacheInput(String cacheName, IgniteSupplier<T> mtdFactory, int size, int populationSize, List<EvolutionaryOperator> evolutionaryOperators, UpdateStrategy updateStrategy) {
+    public GaTrainerCacheInput(String cacheName, IgniteSupplier<T> mtdFactory, int size, int populationSize, List<EvolutionaryOperator> evolutionaryOperators, UpdateStrategy updateStrategy, int iterationsPerLocalTick) {
         this.cacheName = cacheName;
         mf = () -> mtdFactory.get();
         this.size = size;
         this.populationSize = populationSize;
         this.evolutionaryOperators = evolutionaryOperators;
         this.updateStrategy = updateStrategy;
+        this.iterationsPerLocalTick = iterationsPerLocalTick;
     }
 
     @Override public MLDataSet mlDataSet(Ignite ignite) {
         IgniteCache<Integer, MLDataPair> cache = ignite.getOrCreateCache(cacheName);
 
-        System.out.println("Cache size: " + cache.size());
+//        System.out.println("dataset cache size: " + cache.size());
 
         ArrayList<MLDataPair> lst = new ArrayList<>();
 
@@ -79,5 +81,9 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable> implements GA
 
     @Override public UpdateStrategy replaceStrategy() {
         return updateStrategy;
+    }
+
+    @Override public int iterationsPerLocalTick() {
+        return iterationsPerLocalTick;
     }
 }

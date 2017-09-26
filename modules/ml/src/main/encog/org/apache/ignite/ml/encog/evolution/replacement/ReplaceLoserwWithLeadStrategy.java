@@ -41,6 +41,7 @@ public class ReplaceLoserwWithLeadStrategy implements UpdateStrategy {
                 res.add(best);
             else
                 res.add(genome);
+            i++;
         }
 
         return res;

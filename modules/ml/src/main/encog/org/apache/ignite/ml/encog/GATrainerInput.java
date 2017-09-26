@@ -19,6 +19,7 @@ package org.apache.ignite.ml.encog;
 
 import java.util.List;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.evolution.replacement.UpdateStrategy;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.encog.ml.MLEncodable;
@@ -39,7 +40,7 @@ public interface GATrainerInput<T extends MLMethod & MLEncodable> {
 
     int populationSize();
 
-    List<EvolutionaryOperator> evolutionaryOperators();
+    List<IgniteEvolutionaryOperator> evolutionaryOperators();
 
     UpdateStrategy replaceStrategy();
 

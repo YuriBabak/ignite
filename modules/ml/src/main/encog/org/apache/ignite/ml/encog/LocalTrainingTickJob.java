@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.encog;
 
+import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
@@ -25,6 +26,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.caches.TrainingContextCache;
+import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.encog.Encog;
 import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLDataSet;
@@ -63,6 +65,13 @@ public class LocalTrainingTickJob implements ComputeJob {
         MLMethodGeneticAlgorithm training = new MLMethodGeneticAlgorithm(mlMtdFactory, score, population.getSpecies().get(0).getMembers().size());
 
         training.getGenetic().setPopulation(population);
+
+        List<IgniteEvolutionaryOperator> evoOps = ctx.input().evolutionaryOperators();
+        evoOps.forEach(operator -> {
+            operator.setIgnite(ignite);
+            operator.setContext(ctx);
+            training.getGenetic().addOperation(operator.probability(), operator);
+        });
 
         int i = 0;
         while (i < ctx.input().iterationsPerLocalTick()) {

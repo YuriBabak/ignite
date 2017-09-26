@@ -33,6 +33,7 @@ import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.caches.TrainingContextCache;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
 import org.encog.ml.MLMethod;
+import org.encog.ml.MLRegression;
 import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataSet;
@@ -71,14 +72,18 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
         // Here we seed the first generation and make first iteration of algorithm.
         CacheUtils.bcast(GenomesCache.NAME, () -> GATrainer.initialIteration(trainingUUID));
 
+        MLMethodGenome lead2 = null;
+
         while (!isCompleted()){
             MLMethodGenome lead = execute(new GroupTrainerTask(), trainingUUID);
             System.out.println("Iteration " + i + " complete, globally best score is " + lead.getScore());
 
             CacheUtils.bcast(GenomesCache.NAME, () -> GATrainer.updatePopulation(trainingUUID, lead));
+
+            lead2 = lead;
         }
 
-        return buildIgniteModel(null);
+        return buildIgniteModel(lead2);
     }
 
     private static void updatePopulation(UUID trainingUUID, Genome lead) {
@@ -128,7 +133,7 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
     }
 
     private EncogMethodWrapper buildIgniteModel(MLMethodGenome lead) {
-        return null; //TODO: impl
+        return new EncogMethodWrapper((MLRegression)lead.getPhenotype());
     }
 
     private boolean isCompleted() {

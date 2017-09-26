@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.encog;
 
+import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -36,7 +37,7 @@ import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataSet;
 import org.encog.ml.ea.genome.Genome;
-import org.encog.ml.ea.genome.GenomeFactory;
+import org.encog.ml.ea.population.Population;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 import org.encog.ml.genetic.MLMethodGenome;
 import org.encog.neural.networks.BasicNetwork;
@@ -67,22 +68,26 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
         // TODO: initialize genome factory
         TrainingContextCache.getOrCreate(ignite).put(trainingUUID, new TrainingContext(input));
 
-        MLMethodGenome lead = null;
-
         // Here we seed the first generation and make first iteration of algorithm.
         CacheUtils.bcast(GenomesCache.NAME, () -> GATrainer.initialIteration(trainingUUID));
 
-        lead = execute(new GroupTrainerTask(), trainingUUID);
-        execute(new UpdatePopulationTask(), lead);
-
         while (!isCompleted()){
-            lead = execute(new GroupTrainerTask(), trainingUUID);
+            MLMethodGenome lead = execute(new GroupTrainerTask(), trainingUUID);
             System.out.println("Iteration " + i + " complete, globally best score is " + lead.getScore());
 
-            execute(new UpdatePopulationTask(), lead);
+            CacheUtils.bcast(GenomesCache.NAME, () -> GATrainer.updatePopulation(trainingUUID, lead));
         }
 
-        return buildIgniteModel(lead);
+        return buildIgniteModel(null);
+    }
+
+    private static void updatePopulation(UUID trainingUUID, Genome lead) {
+        Ignite ignite = Ignition.localIgnite();
+
+        Population population = GenomesCache.localPopulation(trainingUUID, ignite).get();
+
+        List<Genome> newGenomes = TrainingContextCache.getOrCreate(ignite).get(trainingUUID).input().replaceStrategy().getNewGenomes(population, lead);
+
     }
 
     @NotNull private static void initialIteration(UUID trainingUUID) {

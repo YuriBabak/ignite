@@ -18,12 +18,14 @@
 package org.apache.ignite.ml.encog;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.encog.caches.TrainingContextCache;
+import org.apache.ignite.ml.encog.evolution.replacement.UpdateStrategy;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.encog.ml.MLEncodable;
 import org.encog.ml.MLMethod;
@@ -31,6 +33,7 @@ import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.MLDataSet;
 import org.encog.ml.data.basic.BasicMLDataSet;
+import org.encog.ml.ea.opp.EvolutionaryOperator;
 
 public class GaTrainerCacheInput<T extends MLMethod & MLEncodable> implements GATrainerInput<T> {
     private IgniteSupplier<T> mf;
@@ -68,5 +71,13 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable> implements GA
 
     @Override public int populationSize() {
         return populationSize;
+    }
+
+    @Override public List<EvolutionaryOperator> evolutionaryOperators() {
+        return null;
+    }
+
+    @Override public UpdateStrategy replaceStrategy() {
+        return null;
     }
 }

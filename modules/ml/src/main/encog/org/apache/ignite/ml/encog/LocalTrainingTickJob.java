@@ -17,25 +17,19 @@
 
 package org.apache.ignite.ml.encog;
 
-import java.util.Comparator;
 import java.util.UUID;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.caches.TrainingContextCache;
 import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLDataSet;
-import org.encog.ml.ea.genome.Genome;
-import org.encog.ml.ea.population.BasicPopulation;
-import org.encog.ml.ea.species.Species;
+import org.encog.ml.ea.population.Population;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 import org.encog.ml.genetic.MLMethodGenome;
-import org.encog.ml.genetic.MLMethodGenomeFactory;
 import org.encog.neural.networks.training.TrainingSetScore;
 
 public class LocalTrainingTickJob implements ComputeJob {
@@ -56,33 +50,16 @@ public class LocalTrainingTickJob implements ComputeJob {
         // Load every genome from cache
         Ignite ignite = Ignition.localIgnite();
 
-        BasicPopulation population = new BasicPopulation();
-
-        // TODO: temporary we filter genomes for the current training in this simple way. Better to make SQL query by training uuid.
-        int genomesCnt = 0;
-
-        Species species = population.createSpecies();
-
-        for (Cache.Entry<IgniteBiTuple<UUID, UUID>, MLMethodGenome> entry : GenomesCache.getOrCreate(ignite).localEntries()) {
-            if (entry.getKey().get1().equals(trainingUuid)) {
-                species.add(entry.getValue());
-                genomesCnt++;
-            }
-        }
-
-        species.getMembers().sort(Comparator.comparing(Genome::getScore));
-        species.setLeader(species.getMembers().get(0));
-
-        population.setPopulationSize(genomesCnt);
+        LocalPopulation locPop = GenomesCache.localPopulation(trainingUuid, ignite);
+        Population population = locPop.get();
 
         TrainingContext ctx = TrainingContextCache.getOrCreate(ignite).get(trainingUuid);
         MethodFactory mlMtdFactory = () -> ctx.input().methodFactory().get();
-        population.setGenomeFactory(new MLMethodGenomeFactory(mlMtdFactory, population));
 
         MLDataSet trainingSet = ctx.input().mlDataSet(ignite);
         TrainingSetScore score = new TrainingSetScore(trainingSet);
 
-        MLMethodGeneticAlgorithm training = new MLMethodGeneticAlgorithm(mlMtdFactory, score, genomesCnt);
+        MLMethodGeneticAlgorithm training = new MLMethodGeneticAlgorithm(mlMtdFactory, score, population.getSpecies().get(0).getMembers().size());
 
         training.getGenetic().setPopulation(population);
 
@@ -102,6 +79,8 @@ public class LocalTrainingTickJob implements ComputeJob {
         locallyBest.setSpecies(null);
 
         System.out.println("Locally best score is " + locallyBest.getScore());
+
+        locPop.rewrite(training.getGenetic().getPopulation());
 
         return locallyBest;
     }

@@ -15,31 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.encog;
+package org.apache.ignite.ml.encog.evolution.replacement;
 
 import java.util.List;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.ml.encog.evolution.replacement.UpdateStrategy;
-import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.encog.ml.MLEncodable;
-import org.encog.ml.MLMethod;
-import org.encog.ml.data.MLDataSet;
-import org.encog.ml.ea.opp.EvolutionaryOperator;
+import org.encog.ml.ea.genome.Genome;
+import org.encog.ml.ea.population.Population;
 
-public interface GATrainerInput<T extends MLMethod & MLEncodable> {
-    /**
-     * Returns dataset which is used as a training set on each of trainer nodes.
-     * @return Dataset which is used as a training set on each of trainer nodes.
-     */
-    MLDataSet mlDataSet(Ignite ignite);
-
-    IgniteSupplier<T> methodFactory();
-
-    int datasetSize();
-
-    int populationSize();
-
-    List<EvolutionaryOperator> evolutionaryOperators();
-
-    UpdateStrategy replaceStrategy();
+public interface UpdateStrategy {
+    List<Genome> getNewGenomes(Population population, Genome globalLeader);
 }

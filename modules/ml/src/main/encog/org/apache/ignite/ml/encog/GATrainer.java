@@ -54,7 +54,8 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
     private Ignite ignite;
     private IgniteCache<IgniteBiTuple<UUID, Integer>, BasicNetwork> cache;
 
-    int i = 0;
+    private int iteration = 0;
+    private MLMethodGenome globalLead = null;
 
     public GATrainer(Ignite ignite) {
         this.ignite = ignite;
@@ -72,18 +73,16 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
         // Here we seed the first generation and make first iteration of algorithm.
         CacheUtils.bcast(GenomesCache.NAME, () -> GATrainer.initialIteration(trainingUUID));
 
-        MLMethodGenome lead2 = null;
-
         while (!isCompleted()){
             MLMethodGenome lead = execute(new GroupTrainerTask(), trainingUUID);
-            System.out.println("Iteration " + i + " complete, globally best score is " + lead.getScore());
+            System.out.println("Iteration " + iteration + " complete, globally best score is " + lead.getScore());
 
             CacheUtils.bcast(GenomesCache.NAME, () -> GATrainer.updatePopulation(trainingUUID, lead));
 
-            lead2 = lead;
+            globalLead = lead;
         }
 
-        return buildIgniteModel(lead2);
+        return buildIgniteModel(globalLead);
     }
 
     private static void updatePopulation(UUID trainingUUID, Genome lead) {
@@ -137,7 +136,7 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
     }
 
     private boolean isCompleted() {
-        return i++ == 100; //TODO: impl
+        return iteration++ == 100; //TODO: impl
     }
 
     /** */

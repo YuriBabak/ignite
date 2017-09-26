@@ -67,29 +67,10 @@ public class GenomesCache {
 
     public static LocalPopulation localPopulation(UUID trainingUuid, Ignite ignite) {
         return new LocalPopulation(trainingUuid, ignite);
-//        BasicPopulation res = new BasicPopulation();
-//
-//        // TODO: temporary we filter genomes for the current training in this simple way. Better to make SQL query by training uuid.
-//        int genomesCnt = 0;
-//
-//        Species species = res.createSpecies();
-//
-//        for (Cache.Entry<IgniteBiTuple<UUID, UUID>, MLMethodGenome> entry : GenomesCache.getOrCreate(ignite).localEntries()) {
-//            if (entry.getKey().get1().equals(trainingUuid)) {
-//                species.add(entry.getValue());
-//                genomesCnt++;
-//            }
-//        }
-//
-//        species.getMembers().sort(Comparator.comparing(Genome::getScore));
-//        species.setLeader(species.getMembers().get(0));
-//
-//        res.setPopulationSize(genomesCnt);
-//
-//        TrainingContext ctx = TrainingContextCache.getOrCreate(ignite).get(trainingUuid);
-//        MethodFactory mlMtdFactory = () -> ctx.input().methodFactory().get();
-//        res.setGenomeFactory(new MLMethodGenomeFactory(mlMtdFactory, res));
-//
-//        return res;
+    }
+
+    public static void processForSaving(Genome genome) {
+        genome.setSpecies(null);
+        genome.setPopulation(null);
     }
 }

@@ -120,9 +120,7 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
             MLMethodGenome typedGenome = (MLMethodGenome)genome;
 
             // These fields should not be serialized.
-            typedGenome.setPopulation(null);
-            typedGenome.setSpecies(null);
-
+            GenomesCache.processForSaving(genome);
             GenomesCache.getOrCreate(ignite).put(new IgniteBiTuple<>(trainingUUID, UUID.randomUUID()), typedGenome);
         }
 

@@ -45,7 +45,7 @@ import org.encog.neural.networks.training.TrainingSetScore;
 import org.junit.Test;
 
 public class GenTest  extends GridCommonAbstractTest {
-    public static final String MNIST_LOCATION = "/home/ybabak/Downloads/mnist/";
+    public static final String MNIST_LOCATION = "/home/enny/Downloads/";
     private static final int NODE_COUNT = 2;
 
     /** Grid instance. */
@@ -106,8 +106,8 @@ public class GenTest  extends GridCommonAbstractTest {
         IgniteSupplier<BasicNetwork> fact = () -> {
             BasicNetwork res = new BasicNetwork();
             res.addLayer(new BasicLayer(null,true,28 * 28));
-            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,30));
-            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,10));
+            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,70));
+            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSoftMax(),false,10));
             res.getStructure().finalizeStructure();
 
             res.reset();
@@ -119,9 +119,9 @@ public class GenTest  extends GridCommonAbstractTest {
         GaTrainerCacheInput<BasicNetwork> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
             mnist.getFst().length,
-            100,
+            50,
             evoOps,
-            new ReplaceLoserwWithLeadStrategy(0.5),
+            new ReplaceLoserwWithLeadStrategy(0.1),
             1,
             (ctx, ignite) -> new TrainingSetScore(ctx.input().mlDataSet(ignite)));
 
@@ -153,8 +153,8 @@ public class GenTest  extends GridCommonAbstractTest {
 
     private IgniteBiFunction<Model<MLData, double[]>, MnistUtils.Pair<double[][],double[][]>, Double> errorsPercentage(){
         return (model, pair) -> {
-            long total = 0l;
-            long count = 0l;
+            long total = 0L;
+            long cnt = 0L;
 
             double[][] k = pair.getFst();
             double[][] v = pair.getSnd();
@@ -164,11 +164,31 @@ public class GenTest  extends GridCommonAbstractTest {
             for (int i = 0; i < k.length; i++) {
                 total++;
 
-                if(!Arrays.equals(model.predict(new BasicMLData(k[i])), v[i]))
-                    count++;
+                double[] predict = model.predict(new BasicMLData(k[i]));
+//                if(!Arrays.equals(predict, v[i]))
+                System.out.println();
+                int predictedDigit = toDigit(predict);
+                int idealDigit = toDigit(v[i]);
+                System.out.println(predictedDigit + "," + idealDigit);
+                if(predictedDigit == idealDigit)
+                    cnt++;
             }
 
-            return (double) count / total;
+            return 1 - (double)cnt / total;
         };
+    }
+
+    public static int toDigit(double[] arr) {
+        double max = arr[0];
+        int res = 0;
+
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i] > max) {
+                max = arr[i];
+                res = i;
+            }
+        }
+
+        return res;
     }
 }

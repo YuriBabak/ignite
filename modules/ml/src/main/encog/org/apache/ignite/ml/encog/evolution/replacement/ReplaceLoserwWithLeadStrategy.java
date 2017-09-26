@@ -19,6 +19,7 @@ package org.apache.ignite.ml.encog.evolution.replacement;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.ml.encog.caches.GenomesCache;
 import org.encog.ml.ea.genome.Genome;
 import org.encog.ml.ea.population.Population;
 
@@ -37,6 +38,7 @@ public class ReplaceLoserwWithLeadStrategy implements UpdateStrategy {
         List<Genome> res = new ArrayList<>(size);
 
         for (Genome genome : population.getSpecies().get(0).getMembers()) {
+            GenomesCache.processForSaving(genome);
             // TODO: '>' or '<' should be decided depending on 'shouldMinimize' of CalculateScore.
             if (i > cntToReplace)
                 res.add(best);

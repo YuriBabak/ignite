@@ -22,6 +22,7 @@ import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.evolution.replacement.UpdateStrategy;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.encog.ml.MLEncodable;
@@ -36,11 +37,11 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable> implements GA
     private String cacheName;
     private int size;
     private int populationSize;
-    private List<EvolutionaryOperator> evolutionaryOperators;
+    private List<IgniteEvolutionaryOperator> evolutionaryOperators;
     private UpdateStrategy updateStrategy;
     private int iterationsPerLocalTick;
 
-    public GaTrainerCacheInput(String cacheName, IgniteSupplier<T> mtdFactory, int size, int populationSize, List<EvolutionaryOperator> evolutionaryOperators, UpdateStrategy updateStrategy, int iterationsPerLocalTick) {
+    public GaTrainerCacheInput(String cacheName, IgniteSupplier<T> mtdFactory, int size, int populationSize, List<IgniteEvolutionaryOperator> evolutionaryOperators, UpdateStrategy updateStrategy, int iterationsPerLocalTick) {
         this.cacheName = cacheName;
         mf = () -> mtdFactory.get();
         this.size = size;
@@ -75,7 +76,7 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable> implements GA
         return populationSize;
     }
 
-    @Override public List<EvolutionaryOperator> evolutionaryOperators() {
+    @Override public List<IgniteEvolutionaryOperator> evolutionaryOperators() {
         return evolutionaryOperators;
     }
 

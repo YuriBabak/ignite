@@ -20,6 +20,7 @@ package org.apache.ignite.ml.encog;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
@@ -27,6 +28,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
+import org.apache.ignite.ml.encog.evolution.operators.Hillclimb;
+import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.evolution.replacement.ReplaceLoserwWithLeadStrategy;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
@@ -110,11 +113,13 @@ public class GenTest  extends GridCommonAbstractTest {
             return res;
         };
 
+        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(new Hillclimb(0.1));
+
         GaTrainerCacheInput<BasicNetwork> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
             mnist.getFst().length,
             100,
-            Collections.emptyList(),
+            evoOps,
             new ReplaceLoserwWithLeadStrategy(0.5), 1);
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);

@@ -67,7 +67,9 @@ public class LocalPopulation {
         }
 
         species.getMembers().sort(Comparator.comparing(Genome::getScore));
-        species.setLeader(species.getMembers().get(0));
+        Genome best = species.getMembers().get(0);
+        species.setLeader(best);
+        res.setBestGenome(best);
 
         res.setPopulationSize(genomesCnt);
 
@@ -87,9 +89,12 @@ public class LocalPopulation {
 
         Map<IgniteBiTuple<UUID, UUID>, MLMethodGenome> m = new HashMap<>();
 
+        toSave.forEach(GenomesCache::processForSaving);
+
         int i = 0;
-        for (IgniteBiTuple<UUID, UUID> key : localKeys)
+        for (IgniteBiTuple<UUID, UUID> key : localKeys) {
             m.put(key, (MLMethodGenome)toSave.get(i));
+        }
 
         GenomesCache.getOrCreate(ignite).putAll(m);
     }

@@ -48,14 +48,12 @@ public class WeightMutation extends IgniteEvolutionaryOperator {
         int offspringIndex) {
         TrainingContext ctx = context();
 
-        double weightShift = rnd.nextDouble();
-
         ContainsFlat parent = (ContainsFlat)((MLMethodGenome)parents[parentIndex]).getPhenotype();
 
         double[] weights = parent.getFlat().getWeights().clone();
 
         for (int i = 0; i < weights.length; i++)
-            weights[i] += weightShift;
+            weights[i] += rnd.nextDouble();
 
         BasicNetwork res = (BasicNetwork)ctx.input().methodFactory().get();
         res.decodeFromArray(weights);

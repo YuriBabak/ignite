@@ -95,7 +95,9 @@ public class GenTest  extends GridCommonAbstractTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         System.out.println("Reading mnist...");
-        MnistUtils.Pair<double[][], double[][]> mnist = MnistUtils.mnist(MNIST_LOCATION + "train-images-idx3-ubyte", MNIST_LOCATION + "train-labels-idx1-ubyte", new Random(), 60_000);
+//        MnistUtils.Pair<double[][], double[][]> mnist = MnistUtils.mnist(MNIST_LOCATION + "train-images-idx3-ubyte", MNIST_LOCATION + "train-labels-idx1-ubyte", new Random(), 60_000);
+        MnistUtils.Pair<double[][], double[][]> mnist = MnistUtils.mnist(MNIST_LOCATION + "t10k-images-idx3-ubyte", MNIST_LOCATION + "t10k-labels-idx1-ubyte", new Random(), 10_000);
+
         System.out.println("Done.");
 
         System.out.println("Loading MNIST into test cache...");
@@ -106,7 +108,7 @@ public class GenTest  extends GridCommonAbstractTest {
         IgniteSupplier<BasicNetwork> fact = () -> {
             BasicNetwork res = new BasicNetwork();
             res.addLayer(new BasicLayer(null,true,28 * 28));
-            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,70));
+            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),true,200));
             res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSoftMax(),false,10));
             res.getStructure().finalizeStructure();
 
@@ -114,12 +116,12 @@ public class GenTest  extends GridCommonAbstractTest {
             return res;
         };
 
-        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(new WeightMutation(0.1), new Hillclimb(0.1));
+        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(new WeightMutation(0.4), new Hillclimb(0.4));
 
         GaTrainerCacheInput<BasicNetwork> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
             mnist.getFst().length,
-            50,
+            25,
             evoOps,
             new ReplaceLoserwWithLeadStrategy(0.1),
             1,

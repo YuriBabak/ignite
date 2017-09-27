@@ -109,7 +109,7 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
         long before = System.currentTimeMillis();
         System.out.println("Doing Initial iteration");
         train.setThreadCount(1);
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 7; i++)
             train.iteration();
         System.out.println("Done in " + (System.currentTimeMillis() - before));
 

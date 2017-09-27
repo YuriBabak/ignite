@@ -51,6 +51,7 @@ public class WeightMutation extends IgniteEvolutionaryOperator {
 
                 for (int k = 0; k < parent.getLayerNeuronCount(i + 1); k++){
                     double parentWeight = parent.getWeight(i, j, k);
+                    double shift = rnd.nextDouble() - 0.5d;
 
                     child.setWeight(i, j, k, parentWeight + rnd.nextDouble() - 0.5d);
                 }

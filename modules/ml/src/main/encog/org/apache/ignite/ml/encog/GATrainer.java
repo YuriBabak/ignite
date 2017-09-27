@@ -31,7 +31,9 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.caches.TrainingContextCache;
+import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
+import org.encog.Encog;
 import org.encog.ml.MLMethod;
 import org.encog.ml.MLRegression;
 import org.encog.ml.MethodFactory;
@@ -106,6 +108,13 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
 
         MLMethodGeneticAlgorithm train = new MLMethodGeneticAlgorithm(mtdFactory, score, ctx.input().populationSize());
 
+        List<IgniteEvolutionaryOperator> evoOps = ctx.input().evolutionaryOperators();
+        evoOps.forEach(operator -> {
+            operator.setIgnite(ignite);
+            operator.setContext(ctx);
+            train.getGenetic().addOperation(operator.probability(), operator);
+        });
+
         long before = System.currentTimeMillis();
         System.out.println("Doing Initial iteration");
         train.setThreadCount(1);
@@ -119,12 +128,11 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
         for (Genome genome : train.getGenetic().getPopulation().getSpecies().get(0).getMembers()) {
             MLMethodGenome typedGenome = (MLMethodGenome)genome;
 
-            // These fields should not be serialized.
             GenomesCache.processForSaving(genome);
             GenomesCache.getOrCreate(ignite).put(new IgniteBiTuple<>(trainingUUID, UUID.randomUUID()), typedGenome);
         }
 
-//        Encog.getInstance().shutdown();
+        Encog.getInstance().shutdown();
     }
 
     private <T, R> R execute(ComputeTask<T, R> task, T arg) {

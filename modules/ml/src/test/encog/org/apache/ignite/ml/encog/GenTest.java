@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
+import org.apache.ignite.ml.encog.evolution.operators.Hillclimb;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightCrossover;
@@ -130,7 +131,7 @@ public class GenTest  extends GridCommonAbstractTest {
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);
 
-        ErrorCalculation(model);
+        calculateError(model);
     }
 
     private void loadIntoCache(MnistUtils.Pair<double[][], double[][]> mnist) {
@@ -146,7 +147,7 @@ public class GenTest  extends GridCommonAbstractTest {
         }
     }
 
-    private void ErrorCalculation(EncogMethodWrapper model) throws IOException {
+    private void calculateError(EncogMethodWrapper model) throws IOException {
         MnistUtils.Pair<double[][], double[][]> testMnistData = MnistUtils.mnist(MNIST_LOCATION + "t10k-images-idx3-ubyte", MNIST_LOCATION + "t10k-labels-idx1-ubyte", new Random(), 10_000);
 
         IgniteBiFunction<Model<MLData, double[]>, MnistUtils.Pair<double[][], double[][]>, Double> errorsPercentage = errorsPercentage();

@@ -24,10 +24,9 @@ import org.encog.neural.networks.BasicNetwork;
 
 /**
  * TODO: add description.
- * TODO: use distribution from ctx.
  */
-public class WeightMutation extends IgniteEvolutionaryOperator {
-    public WeightMutation(double prob){
+public class NodeCrossover extends IgniteEvolutionaryOperator {
+    public NodeCrossover(double prob) {
         super(prob);
     }
 
@@ -36,29 +35,30 @@ public class WeightMutation extends IgniteEvolutionaryOperator {
     }
 
     @Override public int parentsNeeded() {
-        return 1;
+        return 2;
     }
 
     @Override public void performOperation(Random rnd, Genome[] parents, int parentIndex, Genome[] offspring,
         int offspringIndex) {
-        BasicNetwork parent = (BasicNetwork)((MLMethodGenome)parents[parentIndex]).getPhenotype();
-        BasicNetwork child = (BasicNetwork)parent.clone();
 
-        int count = parent.getLayerCount();
+        BasicNetwork parent1 = (BasicNetwork)((MLMethodGenome)parents[0]).getPhenotype();
+        BasicNetwork parent2 = (BasicNetwork)((MLMethodGenome)parents[1]).getPhenotype();
+        BasicNetwork child = (BasicNetwork)parent1.clone();
 
-        double shift = rnd.nextDouble() - 0.5d;
+        int count = parent1.getLayerCount();
 
         for (int i = 0; i < count - 1; i++) {
-            for (int j = 0; j < parent.getLayerNeuronCount(i); j++) {
+            for (int j = 0; j < parent1.getLayerNeuronCount(i); j++) {
+                // true - first parent, false - second parent
+                boolean isFirst = rnd.nextBoolean();
 
-                for (int k = 0; k < parent.getLayerNeuronCount(i + 1); k++){
-                    double parentWeight = parent.getWeight(i, j, k);
-
-                    child.setWeight(i, j, k, parentWeight + shift);
-                }
+                for (int k = 0; k < parent1.getLayerNeuronCount(i + 1); k++)
+                    if (!isFirst)
+                        child.setWeight(i, j, k, parent2.getWeight(i, j, k));
             }
         }
 
         offspring[offspringIndex] = new MLMethodGenome(child);
+
     }
 }

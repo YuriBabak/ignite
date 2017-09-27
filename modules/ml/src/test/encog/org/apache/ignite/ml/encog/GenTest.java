@@ -169,10 +169,10 @@ public class GenTest  extends GridCommonAbstractTest {
 
                 double[] predict = model.predict(new BasicMLData(k[i]));
 //                if(!Arrays.equals(predict, v[i]))
-                System.out.println();
+//                System.out.println();
                 int predictedDigit = toDigit(predict);
                 int idealDigit = toDigit(v[i]);
-                System.out.println(predictedDigit + "," + idealDigit);
+//                System.out.println(predictedDigit + "," + idealDigit);
                 if(predictedDigit == idealDigit)
                     cnt++;
             }

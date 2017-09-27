@@ -17,24 +17,22 @@
 
 package org.apache.ignite.ml.encog.evolution.operators;
 
+import java.util.List;
 import java.util.Random;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.encog.ml.ea.genome.Genome;
 import org.encog.ml.genetic.MLMethodGenome;
 import org.encog.neural.networks.BasicNetwork;
-import org.encog.neural.networks.ContainsFlat;
+import org.encog.neural.networks.layers.Layer;
 
 /**
  * TODO: add description.
+ * TODO: use distribution from ctx.
  */
 public class WeightMutation extends IgniteEvolutionaryOperator {
-
-
     public WeightMutation(double prob){
         super(prob);
     }
-
-
 
     @Override public int offspringProduced() {
         return 1;
@@ -48,16 +46,34 @@ public class WeightMutation extends IgniteEvolutionaryOperator {
         int offspringIndex) {
         TrainingContext ctx = context();
 
-        ContainsFlat parent = (ContainsFlat)((MLMethodGenome)parents[parentIndex]).getPhenotype();
+        BasicNetwork parent = (BasicNetwork)((MLMethodGenome)parents[parentIndex]).getPhenotype();
+        BasicNetwork child = (BasicNetwork)parent.clone();
 
-        double[] weights = parent.getFlat().getWeights().clone();
+        List<Layer> layers = parent.getStructure().getLayers();
 
-        for (int i = 0; i < weights.length; i++)
-            weights[i] += rnd.nextDouble();
+        double shift = rnd.nextDouble() - 0.5d;
 
-        BasicNetwork res = (BasicNetwork)ctx.input().methodFactory().get();
-        res.decodeFromArray(weights);
+        System.out.println("Shift is "+ shift);
 
-        offspring[parentIndex] = new MLMethodGenome(res);
+        for (int i = 0; i < layers.size() - 1; i++) {
+            Layer parentLayer = layers.get(i);
+            for (int j = 0; j < parentLayer.getNeuronCount(); j++) {
+                for (int k = 0; k < layers.get(i+1).getNeuronCount(); k++) {
+                    double parentWeight = parent.getWeight(i, j, k);
+
+                    child.setWeight(i, j, k, parentWeight + shift);
+                }
+            }
+        }
+
+//        double[] weights = parent.getFlat().getWeights().clone();
+//
+//        for (int i = 0; i < weights.length; i++)
+//            weights[i] += rnd.nextDouble();
+//
+//        BasicNetwork res = (BasicNetwork)ctx.input().methodFactory().get();
+//        res.decodeFromArray(weights);
+
+        offspring[offspringIndex] = new MLMethodGenome(child);
     }
 }

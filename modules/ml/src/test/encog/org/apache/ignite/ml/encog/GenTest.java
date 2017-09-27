@@ -27,8 +27,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
-import org.apache.ignite.ml.encog.evolution.operators.Hillclimb;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
+import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
 import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.evolution.replacement.ReplaceLoserwWithLeadStrategy;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -108,7 +108,7 @@ public class GenTest  extends GridCommonAbstractTest {
         IgniteSupplier<BasicNetwork> fact = () -> {
             BasicNetwork res = new BasicNetwork();
             res.addLayer(new BasicLayer(null,true,28 * 28));
-            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),true,200));
+            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),true,300));
             res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSoftMax(),false,10));
             res.getStructure().finalizeStructure();
 
@@ -116,7 +116,7 @@ public class GenTest  extends GridCommonAbstractTest {
             return res;
         };
 
-        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(new WeightMutation(0.4), new Hillclimb(0.4));
+        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(new WeightMutation(0.4), new MutateNodes(20, 0.1));
 
         GaTrainerCacheInput<BasicNetwork> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
@@ -129,7 +129,7 @@ public class GenTest  extends GridCommonAbstractTest {
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);
 
-        ErrorCalculation(model);
+        calculateError(model);
     }
 
     private void loadIntoCache(MnistUtils.Pair<double[][], double[][]> mnist) {
@@ -145,7 +145,7 @@ public class GenTest  extends GridCommonAbstractTest {
         }
     }
 
-    private void ErrorCalculation(EncogMethodWrapper model) throws IOException {
+    private void calculateError(EncogMethodWrapper model) throws IOException {
         MnistUtils.Pair<double[][], double[][]> testMnistData = MnistUtils.mnist(MNIST_LOCATION + "t10k-images-idx3-ubyte", MNIST_LOCATION + "t10k-labels-idx1-ubyte", new Random(), 10_000);
 
         IgniteBiFunction<Model<MLData, double[]>, MnistUtils.Pair<double[][], double[][]>, Double> errorsPercentage = errorsPercentage();

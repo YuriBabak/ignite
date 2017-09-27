@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
+import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.evolution.replacement.ReplaceLoserwWithLeadStrategy;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -45,7 +46,7 @@ import org.junit.Test;
 
 public class GenTest  extends GridCommonAbstractTest {
     public static final String MNIST_LOCATION = "/home/ybabak/Downloads/mnist/";
-    private static final int NODE_COUNT = 2;
+    private static final int NODE_COUNT = 3;
 
     /** Grid instance. */
     protected Ignite ignite;
@@ -115,7 +116,7 @@ public class GenTest  extends GridCommonAbstractTest {
             return res;
         };
 
-        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(new WeightMutation(0.2));//, new Hillclimb(0.4));
+        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(new WeightMutation(0.1), new NodeCrossover(1.0));//, new Hillclimb(0.4));
 
         GaTrainerCacheInput<BasicNetwork> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,

@@ -28,8 +28,6 @@ import org.encog.neural.networks.ContainsFlat;
  * TODO: add description.
  */
 public class WeightMutation extends IgniteEvolutionaryOperator {
-
-
     public WeightMutation(double prob){
         super(prob);
     }

@@ -30,7 +30,7 @@ import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
 import org.apache.ignite.ml.encog.evolution.operators.Hillclimb;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
-import org.apache.ignite.ml.encog.evolution.replacement.ReplaceLoserwWithLeadStrategy;
+import org.apache.ignite.ml.encog.metaoptimizers.ReplaceLoserWithLeader;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
@@ -39,13 +39,14 @@ import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.basic.BasicMLData;
 import org.encog.ml.data.basic.BasicMLDataPair;
+import org.encog.ml.genetic.MLMethodGenome;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.TrainingSetScore;
 import org.junit.Test;
 
 public class GenTest  extends GridCommonAbstractTest {
-    public static final String MNIST_LOCATION = "/home/ybabak/Downloads/mnist/";
+    public static final String MNIST_LOCATION = "/home/enny/Downloads/";
     private static final int NODE_COUNT = 3;
 
     /** Grid instance. */
@@ -116,16 +117,18 @@ public class GenTest  extends GridCommonAbstractTest {
             return res;
         };
 
-        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(new WeightMutation(0.4), new Hillclimb(0.4));
+        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(new WeightMutation(0.4, "wm"), new Hillclimb(0.4, "hc"));
 
-        GaTrainerCacheInput<BasicNetwork> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
+        GaTrainerCacheInput<BasicNetwork, MLMethodGenome, MLMethodGenome> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
             mnist.getFst().length,
             25,
             evoOps,
-            new ReplaceLoserwWithLeadStrategy(0.1),
             1,
-            (ctx, ignite) -> new TrainingSetScore(ctx.input().mlDataSet(ignite)));
+            (ctx, ignite) -> new TrainingSetScore(ctx.input().mlDataSet(ignite)),
+            3,
+            new ReplaceLoserWithLeader(0.2)
+            );
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);
 

@@ -26,8 +26,8 @@ import org.encog.neural.networks.BasicNetwork;
  * TODO: add description.
  */
 public class NodeCrossover extends IgniteEvolutionaryOperator {
-    public NodeCrossover(double prob) {
-        super(prob);
+    public NodeCrossover(double prob, String operatorId) {
+        super(prob, operatorId);
     }
 
     @Override public int offspringProduced() {

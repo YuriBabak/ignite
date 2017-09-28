@@ -15,13 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.encog.evolution.replacement;
+package org.apache.ignite.ml.encog.metaoptimizers;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
-import org.encog.ml.ea.genome.Genome;
+import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.encog.ml.ea.population.Population;
+import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 
-public interface UpdateStrategy extends Serializable {
-    List<Genome> getNewGenomes(Population population, Genome globalLeader);
+public interface Metaoptimizer<S, U extends Serializable> extends Serializable {
+    S extractStats(Population population, TrainingContext ctx);
+    U statsAggregator(Collection<List<S>> stats);
+    MLMethodGeneticAlgorithm statsHandler(MLMethodGeneticAlgorithm train, U data);
 }

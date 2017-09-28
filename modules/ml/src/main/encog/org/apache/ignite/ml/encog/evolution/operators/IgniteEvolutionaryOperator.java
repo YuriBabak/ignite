@@ -27,10 +27,13 @@ public abstract class IgniteEvolutionaryOperator implements EvolutionaryOperator
     private TrainingContext ctx;
     private Ignite ignite;
     private double prob;
+    private String operatorId;
+
     private EvolutionaryAlgorithm owner;
 
-    public IgniteEvolutionaryOperator(double prob) {
+    public IgniteEvolutionaryOperator(double prob, String operatorId) {
         this.prob = prob;
+        this.operatorId = operatorId;
     }
 
     @Override public void init(EvolutionaryAlgorithm theOwner) {
@@ -55,5 +58,9 @@ public abstract class IgniteEvolutionaryOperator implements EvolutionaryOperator
 
     public double probability() {
         return prob;
+    }
+
+    public String operatorId() {
+        return operatorId;
     }
 }

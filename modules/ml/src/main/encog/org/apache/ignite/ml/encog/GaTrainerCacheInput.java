@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.encog;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import javax.cache.Cache;
@@ -24,9 +25,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
-import org.apache.ignite.ml.encog.evolution.replacement.UpdateStrategy;
+import org.apache.ignite.ml.encog.metaoptimizers.Metaoptimizer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.encog.ml.CalculateScore;
 import org.encog.ml.MLEncodable;
@@ -35,31 +35,35 @@ import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.MLDataSet;
 import org.encog.ml.data.basic.BasicMLDataSet;
 
-public class GaTrainerCacheInput<T extends MLMethod & MLEncodable> implements GATrainerInput<T> {
+public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends Serializable> implements GATrainerInput<T, S, U> {
     private final IgniteBiFunction<TrainingContext, Ignite, CalculateScore> scoreCalculatorSupplier;
+    private final int speciesCount;
     private IgniteSupplier<T> mf;
     private String cacheName;
     private int size;
     private int populationSize;
     private List<IgniteEvolutionaryOperator> evolutionaryOperators;
-    private UpdateStrategy updateStrategy;
     private int iterationsPerLocalTick;
+    private Metaoptimizer<S, U> metaoptimizer;
 
     public GaTrainerCacheInput(String cacheName,
         IgniteSupplier<T> mtdFactory,
         int size,
         int populationSize,
-        List<IgniteEvolutionaryOperator> evolutionaryOperators, UpdateStrategy updateStrategy,
+        List<IgniteEvolutionaryOperator> evolutionaryOperators,
         int iterationsPerLocalTick,
-        IgniteBiFunction<TrainingContext, Ignite, CalculateScore> scoreCalculator) {
+        IgniteBiFunction<TrainingContext, Ignite, CalculateScore> scoreCalculator,
+        int speciesCount,
+        Metaoptimizer<S, U> metaoptimizer) {
         this.cacheName = cacheName;
         mf = () -> mtdFactory.get();
         this.size = size;
         this.populationSize = populationSize;
         this.evolutionaryOperators = evolutionaryOperators;
-        this.updateStrategy = updateStrategy;
         this.iterationsPerLocalTick = iterationsPerLocalTick;
         this.scoreCalculatorSupplier = scoreCalculator;
+        this.speciesCount = speciesCount;
+        this.metaoptimizer = metaoptimizer;
     }
 
     @Override public MLDataSet mlDataSet(Ignite ignite) {
@@ -83,16 +87,12 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable> implements GA
         return size;
     }
 
-    @Override public int populationSize() {
+    @Override public int subPopulationSize() {
         return populationSize;
     }
 
     @Override public List<IgniteEvolutionaryOperator> evolutionaryOperators() {
         return evolutionaryOperators;
-    }
-
-    @Override public UpdateStrategy replaceStrategy() {
-        return updateStrategy;
     }
 
     @Override public int iterationsPerLocalTick() {
@@ -101,5 +101,13 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable> implements GA
 
     @Override public CalculateScore scoreCalculator(TrainingContext ctx, Ignite ignite) {
         return scoreCalculatorSupplier.apply(ctx, ignite);
+    }
+
+    @Override public int subPopulationsCount() {
+        return speciesCount;
+    }
+
+    @Override public Metaoptimizer<S, U> metaoptimizer() {
+        return metaoptimizer;
     }
 }

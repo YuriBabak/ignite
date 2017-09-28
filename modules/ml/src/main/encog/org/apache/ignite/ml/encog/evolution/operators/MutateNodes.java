@@ -30,8 +30,8 @@ import org.encog.neural.networks.BasicNetwork;
 public class MutateNodes extends IgniteEvolutionaryOperator {
     private int nodesToMutateCnt;
 
-    public MutateNodes(int nodesToMutateCnt, double prob) {
-        super(prob);
+    public MutateNodes(int nodesToMutateCnt, double prob, String operatorId) {
+        super(prob, operatorId);
         this.nodesToMutateCnt = nodesToMutateCnt;
     }
 

@@ -17,8 +17,12 @@
 
 package org.apache.ignite.ml.encog;
 
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -40,7 +44,6 @@ import org.encog.ml.MethodFactory;
 import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataSet;
 import org.encog.ml.ea.genome.Genome;
-import org.encog.ml.ea.population.Population;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 import org.encog.ml.genetic.MLMethodGenome;
 import org.encog.neural.networks.BasicNetwork;
@@ -50,7 +53,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * TODO: add description.
  */
-public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<? extends MLMethod>, EncogMethodWrapper> {
+public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData, double[], GATrainerInput<? extends MLMethod, S, U>, EncogMethodWrapper> {
     public static String CACHE = "encog_nets";
 
     private Ignite ignite;
@@ -63,76 +66,74 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
         this.ignite = ignite;
     }
 
-    @Override public EncogMethodWrapper train(GATrainerInput<? extends MLMethod> input) {
+    @Override public EncogMethodWrapper train(GATrainerInput<? extends MLMethod, S, U> input) {
         cache = newCache();
         GenomesCache.getOrCreate(ignite);
 
         UUID trainingUUID = UUID.randomUUID();
 
         // TODO: initialize genome factory
-        TrainingContextCache.getOrCreate(ignite).put(trainingUUID, new TrainingContext(input));
+        TrainingContextCache.getOrCreate(ignite).put(trainingUUID, new TrainingContext<>(input));
 
         // Here we seed the first generation and make first iteration of algorithm.
-        CacheUtils.bcast(GenomesCache.NAME, () -> GATrainer.initialIteration(trainingUUID));
+        Collection<List<S>> stats = CacheUtils.bcast(GenomesCache.NAME, () -> GATrainer.initialIteration(trainingUUID));
+        U aggregatedStats = input.metaoptimizer().statsAggregator(stats);
 
-        while (!isCompleted()){
-            MLMethodGenome lead = execute(new GroupTrainerTask(), trainingUUID);
-            System.out.println("Iteration " + iteration + " complete, globally best score is " + lead.getScore());
-
-            CacheUtils.bcast(GenomesCache.NAME, () -> GATrainer.updatePopulation(trainingUUID, lead));
-
-            globalLead = lead;
-        }
+        while (!isCompleted())
+            aggregatedStats = execute(new GroupTrainerTask<>(input.metaoptimizer()::statsAggregator, aggregatedStats), trainingUUID);
 
         return buildIgniteModel(globalLead);
     }
 
-    private static void updatePopulation(UUID trainingUUID, Genome lead) {
-        Ignite ignite = Ignition.localIgnite();
-
-        Population population = GenomesCache.localPopulation(trainingUUID, ignite).get();
-
-        List<Genome> newGenomes = TrainingContextCache.getOrCreate(ignite).get(trainingUUID).input().replaceStrategy().getNewGenomes(population, lead);
-
-        GenomesCache.localPopulation(trainingUUID, ignite).rewrite(newGenomes);
-    }
-
-    @NotNull private static void initialIteration(UUID trainingUUID) {
+    @NotNull private static <S, U extends Serializable> List<S> initialIteration(UUID trainingUUID) {
         Ignite ignite = Ignition.localIgnite();
 
         IgniteCache<UUID, TrainingContext> cache = TrainingContextCache.getOrCreate(ignite);
-        TrainingContext ctx = cache.get(trainingUUID);
+        TrainingContext<S, U> ctx = cache.get(trainingUUID);
         MLDataSet trainingSet = ctx.input().mlDataSet(ignite);
         MethodFactory mtdFactory = () -> ctx.input().methodFactory().get();
         TrainingSetScore score = new TrainingSetScore(trainingSet);
-
-        MLMethodGeneticAlgorithm train = new MLMethodGeneticAlgorithm(mtdFactory, score, ctx.input().populationSize());
-
         List<IgniteEvolutionaryOperator> evoOps = ctx.input().evolutionaryOperators();
-        evoOps.forEach(operator -> {
-            operator.setIgnite(ignite);
-            operator.setContext(ctx);
-            train.getGenetic().addOperation(operator.probability(), operator);
-        });
 
-        long before = System.currentTimeMillis();
-        System.out.println("Doing Initial iteration");
-        train.setThreadCount(1);
-        for (int i = 0; i < 7; i++)
-            train.iteration();
-        System.out.println("Done in " + (System.currentTimeMillis() - before));
+        List<S> res = new LinkedList<>();
 
-        train.finishTraining();
+        for (int subPopulation = 0; subPopulation < ctx.input().subPopulationsCount(); subPopulation++) {
+            // Check if this specNum is mapped to the current node...
+            GenomesCache.Key sampleKey = new GenomesCache.Key(trainingUUID, UUID.randomUUID(), subPopulation);
+            if (GenomesCache.affinity(ignite).mapKeyToNode(sampleKey) != ignite.cluster().localNode())
+                continue;
 
-        // Load all genomes into cache
-        for (Genome genome : train.getGenetic().getPopulation().getSpecies().get(0).getMembers()) {
-            MLMethodGenome typedGenome = (MLMethodGenome)genome;
+            MLMethodGeneticAlgorithm train = new MLMethodGeneticAlgorithm(mtdFactory, score, ctx.input().subPopulationSize());
 
-            GenomesCache.processForSaving(genome);
-            GenomesCache.getOrCreate(ignite).put(new IgniteBiTuple<>(trainingUUID, UUID.randomUUID()), typedGenome);
+            evoOps.forEach(operator -> {
+                operator.setIgnite(ignite);
+                operator.setContext(ctx);
+                train.getGenetic().addOperation(operator.probability(), operator);
+            });
+
+            long before = System.currentTimeMillis();
+            System.out.println("Doing Initial iteration for subPopulation " + subPopulation);
+            train.setThreadCount(1);
+            for (int i = 0; i < 3; i++)
+                train.iteration();
+            System.out.println("Done in " + (System.currentTimeMillis() - before));
+
+            train.finishTraining();
+
+            res.add(ctx.input().metaoptimizer().extractStats(train.getGenetic().getPopulation(), ctx));
+
+            Encog.getInstance().shutdown();
+
+            // Load all genomes into cache.
+            for (Genome genome : train.getGenetic().getPopulation().getSpecies().get(0).getMembers()) {
+                MLMethodGenome typedGenome = (MLMethodGenome)genome;
+
+                GenomesCache.processForSaving(genome);
+                GenomesCache.getOrCreate(ignite).put(new GenomesCache.Key(trainingUUID, UUID.randomUUID(), subPopulation), typedGenome);
+            }
         }
 
-        Encog.getInstance().shutdown();
+        return res;
     }
 
     private <T, R> R execute(ComputeTask<T, R> task, T arg) {

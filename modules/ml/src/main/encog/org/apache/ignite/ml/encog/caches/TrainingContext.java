@@ -27,18 +27,28 @@ import org.encog.ml.data.MLDataSet;
 import org.encog.ml.ea.genome.GenomeFactory;
 import org.encog.ml.factory.MLMethodFactory;
 
-public class TrainingContext implements Serializable {
-    private GATrainerInput<? extends MLMethod> input;
+// TODO: maybe we should store in cache only input and all other, non-constant data should be send each time.
+public class TrainingContext<S, U extends Serializable> implements Serializable {
+    private GATrainerInput<? extends MLMethod, S, U> input;
+    U data;
 
     public TrainingContext() {
 
     }
 
-    public TrainingContext(GATrainerInput<? extends MLMethod> input) {
+    public TrainingContext(GATrainerInput<? extends MLMethod, S, U> input) {
         this.input = input;
     }
 
-    public GATrainerInput<? extends MLMethod> input() {
+    public GATrainerInput<? extends MLMethod, S, U> input() {
         return input;
+    }
+
+    public void setData(U data) {
+        this.data = data;
+    }
+
+    public U data() {
+        return data;
     }
 }

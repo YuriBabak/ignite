@@ -44,8 +44,8 @@ public class CacheBasedPopulation implements Population {
 
         pop = new BasicPopulation();
 
-        for (Cache.Entry<IgniteBiTuple<UUID, UUID>, MLMethodGenome> entry : GenomesCache.getOrCreate(ignite).localEntries()) {
-            if (entry.getKey().get1().equals(trainingUuid))
+        for (Cache.Entry<GenomesCache.Key, MLMethodGenome> entry : GenomesCache.getOrCreate(ignite).localEntries()) {
+            if (entry.getKey().trainingUuid().equals(trainingUuid))
                 pop.getSpecies().get(0).add(entry.getValue());
         }
 

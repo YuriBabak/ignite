@@ -46,7 +46,7 @@ import org.encog.neural.networks.training.TrainingSetScore;
 import org.junit.Test;
 
 public class GenTest  extends GridCommonAbstractTest {
-    public static final String MNIST_LOCATION = "/home/enny/Downloads/";
+    public static final String MNIST_LOCATION = "C:/Users/Yury/Downloads/mnist/";
     private static final int NODE_COUNT = 3;
 
     /** Grid instance. */
@@ -117,7 +117,10 @@ public class GenTest  extends GridCommonAbstractTest {
             return res;
         };
 
-        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(new WeightMutation(0.4, "wm"), new Hillclimb(0.4, "hc"));
+        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(new WeightMutation(0.4),
+//            new WeightCrossover(0.5),
+//            new NodeCrossover(0.5),
+            new MutateNodes(10, 0.2));//, new Hillclimb(0.4));
 
         GaTrainerCacheInput<BasicNetwork, MLMethodGenome, MLMethodGenome> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
@@ -171,10 +174,10 @@ public class GenTest  extends GridCommonAbstractTest {
 
                 double[] predict = model.predict(new BasicMLData(k[i]));
 //                if(!Arrays.equals(predict, v[i]))
-                System.out.println();
+//                System.out.println();
                 int predictedDigit = toDigit(predict);
                 int idealDigit = toDigit(v[i]);
-                System.out.println(predictedDigit + "," + idealDigit);
+//                System.out.println(predictedDigit + "," + idealDigit);
                 if(predictedDigit == idealDigit)
                     cnt++;
             }

@@ -62,6 +62,9 @@ public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData
     private int iteration = 0;
     private MLMethodGenome globalLead = null;
 
+    /**
+     * @param ignite Ignite.
+     */
     public GATrainer(Ignite ignite) {
         this.ignite = ignite;
     }
@@ -136,16 +139,27 @@ public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData
         return res;
     }
 
+    /**
+     * exec compute task over cache.
+     *
+     * @param task Task.
+     * @param arg Argument.
+     */
     private <T, R> R execute(ComputeTask<T, R> task, T arg) {
         return ignite.compute(ignite.cluster().forCacheNodes(GenomesCache.NAME)).execute(task, arg);
     }
 
+    /**
+     * Wrap encog model.
+     *
+     * @param lead Lead.
+     */
     private EncogMethodWrapper buildIgniteModel(MLMethodGenome lead) {
         return new EncogMethodWrapper((MLRegression)lead.getPhenotype());
     }
 
     private boolean isCompleted() {
-        return iteration++ == 30; //TODO: impl
+        return iteration++ == MAX_ITERATION; //TODO: impl
     }
 
     /** */

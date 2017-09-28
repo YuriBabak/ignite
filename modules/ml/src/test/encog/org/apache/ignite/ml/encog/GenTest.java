@@ -27,8 +27,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
-import org.apache.ignite.ml.encog.evolution.operators.Hillclimb;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
+import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
 import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.metaoptimizers.ReplaceLoserWithLeader;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -46,7 +46,7 @@ import org.encog.neural.networks.training.TrainingSetScore;
 import org.junit.Test;
 
 public class GenTest  extends GridCommonAbstractTest {
-    public static final String MNIST_LOCATION = "C:/Users/Yury/Downloads/mnist/";
+    public static final String MNIST_LOCATION = "/home/enny/Downloads/";
     private static final int NODE_COUNT = 3;
 
     /** Grid instance. */
@@ -96,8 +96,8 @@ public class GenTest  extends GridCommonAbstractTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         System.out.println("Reading mnist...");
-//        MnistUtils.Pair<double[][], double[][]> mnist = MnistUtils.mnist(MNIST_LOCATION + "train-images-idx3-ubyte", MNIST_LOCATION + "train-labels-idx1-ubyte", new Random(), 60_000);
-        MnistUtils.Pair<double[][], double[][]> mnist = MnistUtils.mnist(MNIST_LOCATION + "t10k-images-idx3-ubyte", MNIST_LOCATION + "t10k-labels-idx1-ubyte", new Random(), 10_000);
+        MnistUtils.Pair<double[][], double[][]> mnist = MnistUtils.mnist(MNIST_LOCATION + "train-images-idx3-ubyte", MNIST_LOCATION + "train-labels-idx1-ubyte", new Random(), 60_000);
+//        MnistUtils.Pair<double[][], double[][]> mnist = MnistUtils.mnist(MNIST_LOCATION + "t10k-images-idx3-ubyte", MNIST_LOCATION + "t10k-labels-idx1-ubyte", new Random(), 10_000);
 
         System.out.println("Done.");
 
@@ -117,10 +117,10 @@ public class GenTest  extends GridCommonAbstractTest {
             return res;
         };
 
-        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(new WeightMutation(0.4),
+        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(new WeightMutation(0.4, "wm"),
 //            new WeightCrossover(0.5),
 //            new NodeCrossover(0.5),
-            new MutateNodes(10, 0.2));//, new Hillclimb(0.4));
+            new MutateNodes(10, 0.2, "mn"));//, new Hillclimb(0.4));
 
         GaTrainerCacheInput<BasicNetwork, MLMethodGenome, MLMethodGenome> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,

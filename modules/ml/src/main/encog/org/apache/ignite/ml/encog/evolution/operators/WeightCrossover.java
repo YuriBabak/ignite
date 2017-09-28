@@ -26,8 +26,8 @@ import org.encog.neural.networks.BasicNetwork;
  * TODO: add description.
  */
 public class WeightCrossover extends IgniteEvolutionaryOperator {
-    public WeightCrossover(double prob) {
-        super(prob);
+    public WeightCrossover(double prob, String operatorId) {
+        super(prob, operatorId);
     }
 
     @Override public int offspringProduced() {

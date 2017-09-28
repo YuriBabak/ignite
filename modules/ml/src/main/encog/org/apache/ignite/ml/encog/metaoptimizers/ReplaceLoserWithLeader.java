@@ -49,13 +49,15 @@ public class ReplaceLoserWithLeader implements Metaoptimizer<MLMethodGenome, MLM
 
     @Override
     public MLMethodGeneticAlgorithm statsHandler(MLMethodGeneticAlgorithm train, MLMethodGenome best) {
-        int size = train.getGenetic().getPopulation().getPopulationSize();
+        Population population = train.getGenetic().getPopulation();
+        best.setPopulation(population);
+        int size = population.getPopulationSize();
         int cntToReplace = (int)(size * replaceRatio);
 
         int i = 0;
         List<Genome> genomes = new ArrayList<>(size);
 
-        for (Genome genome : train.getGenetic().getPopulation().getSpecies().get(0).getMembers()) {
+        for (Genome genome : population.getSpecies().get(0).getMembers()) {
             // TODO: '>' or '<' should be decided depending on 'shouldMinimize' of CalculateScore.
             if (i > cntToReplace)
                 genomes.add(best);
@@ -64,7 +66,7 @@ public class ReplaceLoserWithLeader implements Metaoptimizer<MLMethodGenome, MLM
             i++;
         }
 
-        train.getGenetic().getPopulation().getSpecies().get(0).getMembers().addAll(genomes);
+        population.getSpecies().get(0).getMembers().addAll(genomes);
 
         return train;
     }

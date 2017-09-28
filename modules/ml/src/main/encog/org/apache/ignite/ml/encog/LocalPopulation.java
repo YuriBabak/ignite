@@ -91,6 +91,7 @@ public class LocalPopulation<S, U extends Serializable> {
         Population pop = m.get(speciesNum);
         pop.setPopulationSize(pop.getPopulationSize() + 1);
         pop.getSpecies().get(0).add(genome);
+        genome.setPopulation(pop);
     }
 
     public Map<Integer, Population> get() {

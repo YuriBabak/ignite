@@ -45,13 +45,13 @@ import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 import org.encog.ml.genetic.MLMethodGenome;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.training.TrainingSetScore;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * TODO: add description.
  */
 public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<? extends MLMethod>, EncogMethodWrapper> {
-    public static String CACHE = "encog_nets";
+    private static final int MAX_ITERATION = 30;
+    private static String CACHE = "encog_nets";
 
     private Ignite ignite;
     private IgniteCache<IgniteBiTuple<UUID, Integer>, BasicNetwork> cache;
@@ -59,6 +59,9 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
     private int iteration = 0;
     private MLMethodGenome globalLead = null;
 
+    /**
+     * @param ignite Ignite.
+     */
     public GATrainer(Ignite ignite) {
         this.ignite = ignite;
     }
@@ -87,6 +90,12 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
         return buildIgniteModel(globalLead);
     }
 
+    /**
+     * Update population using broadcast.
+     *
+     * @param trainingUUID Training uuid.
+     * @param lead Lead.
+     */
     private static void updatePopulation(UUID trainingUUID, Genome lead) {
         Ignite ignite = Ignition.localIgnite();
 
@@ -97,7 +106,12 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
         GenomesCache.localPopulation(trainingUUID, ignite).rewrite(newGenomes);
     }
 
-    @NotNull private static void initialIteration(UUID trainingUUID) {
+    /**
+     * Initialization step.
+     *
+     * @param trainingUUID Training uuid.
+     */
+    private static void initialIteration(UUID trainingUUID) {
         Ignite ignite = Ignition.localIgnite();
 
         IgniteCache<UUID, TrainingContext> cache = TrainingContextCache.getOrCreate(ignite);
@@ -135,16 +149,27 @@ public class GATrainer implements GroupTrainer<MLData, double[], GATrainerInput<
         Encog.getInstance().shutdown();
     }
 
+    /**
+     * exec compute task over cache.
+     *
+     * @param task Task.
+     * @param arg Argument.
+     */
     private <T, R> R execute(ComputeTask<T, R> task, T arg) {
         return ignite.compute(ignite.cluster().forCacheNodes(GenomesCache.NAME)).execute(task, arg);
     }
 
+    /**
+     * Wrap encog model.
+     *
+     * @param lead Lead.
+     */
     private EncogMethodWrapper buildIgniteModel(MLMethodGenome lead) {
         return new EncogMethodWrapper((MLRegression)lead.getPhenotype());
     }
 
     private boolean isCompleted() {
-        return iteration++ == 30; //TODO: impl
+        return iteration++ == MAX_ITERATION; //TODO: impl
     }
 
     /** */

@@ -21,19 +21,22 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
+import org.apache.ignite.ml.math.functions.Functions;
 import org.encog.ml.ea.genome.BasicGenome;
 import org.encog.ml.ea.genome.Genome;
 import org.encog.ml.ea.population.Population;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 import org.encog.ml.genetic.MLMethodGenome;
 
-public class ReplaceLoserWithLeader implements Metaoptimizer<MLMethodGenome, MLMethodGenome> {
-    private double replaceRatio;
+public class AddLeaders implements Metaoptimizer<MLMethodGenome, MLMethodGenome> {
+    private double additionRatio;
 
-    public ReplaceLoserWithLeader(double replaceRatio) {
-        this.replaceRatio = replaceRatio;
+    public AddLeaders(double additionRatio) {
+        this.additionRatio = additionRatio;
     }
 
     @Override public MLMethodGenome extractStats(Population population, TrainingContext ctx) {
@@ -54,22 +57,15 @@ public class ReplaceLoserWithLeader implements Metaoptimizer<MLMethodGenome, MLM
         Population population = train.getGenetic().getPopulation();
         best.setPopulation(population);
         int size = population.getPopulationSize();
-        int cntToReplace = (int)(size * replaceRatio);
+        int cntToAdd = (int)(size * additionRatio);
 
-        int i = 0;
-        List<Genome> genomes = new ArrayList<>(size);
+        List<Genome> members = population.getSpecies().get(0).getMembers();
+        for (int i = 0; i < cntToAdd; i++)
+            members.add(best);
 
-        for (Genome genome : population.getSpecies().get(0).getMembers()) {
-            // TODO: '>' or '<' should be decided depending on 'shouldMinimize' of CalculateScore.
-            if (i > cntToReplace)
-                genomes.add(best);
-            else
-                genomes.add(genome);
-            i++;
-        }
+        members.sort(Comparator.comparingDouble(Genome::getScore));
 
-        population.getSpecies().get(0).getMembers().addAll(genomes);
-        population.getSpecies().get(0).getMembers().sort(Comparator.comparingDouble(Genome::getScore));
+        population.setPopulationSize(cntToAdd + size);
 
         return train;
     }

@@ -99,15 +99,17 @@ public class LocalPopulation<S, U extends Serializable> {
     }
 
     public void rewrite(int subPopulation, List<Genome> toSave) {
-        assert toSave.size() == localKeys.get(subPopulation).size();
+        // We do not save least fit genomes
+//        assert toSave.size() == localKeys.get(subPopulation).size();
+        List<Genome> best = toSave.subList(0, localKeys.get(subPopulation).size());
 
         Map<GenomesCache.Key, MLMethodGenome> m = new HashMap<>();
 
-        toSave.forEach(GenomesCache::processForSaving);
+        best.forEach(GenomesCache::processForSaving);
 
         int i = 0;
         for (GenomesCache.Key key : localKeys.get(subPopulation))
-            m.put(key, (MLMethodGenome)toSave.get(i));
+            m.put(key, (MLMethodGenome)best.get(i));
 
         GenomesCache.getOrCreate(ignite).putAll(m);
     }

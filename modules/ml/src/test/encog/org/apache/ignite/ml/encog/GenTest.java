@@ -30,7 +30,7 @@ import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
 import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
-import org.apache.ignite.ml.encog.metaoptimizers.ReplaceLoserWithLeader;
+import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
@@ -47,7 +47,7 @@ import org.junit.Test;
 
 public class GenTest  extends GridCommonAbstractTest {
     public static final String MNIST_LOCATION = "/home/enny/Downloads/";
-    private static final int NODE_COUNT = 1;
+    private static final int NODE_COUNT = 3;
 
     /** Grid instance. */
     protected Ignite ignite;
@@ -128,10 +128,10 @@ public class GenTest  extends GridCommonAbstractTest {
             mnist.getFst().length,
             25,
             evoOps,
-            1,
+            5,
             (ctx, ignite) -> new TrainingSetScore(ctx.input().mlDataSet(ignite)),
             3,
-            new ReplaceLoserWithLeader(0.2)
+            new AddLeaders(0.2)
             );
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);

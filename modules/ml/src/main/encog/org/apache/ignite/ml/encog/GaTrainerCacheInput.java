@@ -20,9 +20,12 @@ package org.apache.ignite.ml.encog;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.metaoptimizers.Metaoptimizer;
@@ -45,6 +48,7 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
     private List<IgniteEvolutionaryOperator> evolutionaryOperators;
     private int iterationsPerLocalTick;
     private Metaoptimizer<S, U> metaoptimizer;
+    private double batchPercentage;
 
     public GaTrainerCacheInput(String cacheName,
         IgniteSupplier<T> mtdFactory,
@@ -54,7 +58,8 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
         int iterationsPerLocalTick,
         IgniteBiFunction<TrainingContext, Ignite, CalculateScore> scoreCalculator,
         int speciesCount,
-        Metaoptimizer<S, U> metaoptimizer) {
+        Metaoptimizer<S, U> metaoptimizer,
+        double batchPercentage) {
         this.cacheName = cacheName;
         mf = () -> mtdFactory.get();
         this.size = size;
@@ -64,6 +69,7 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
         this.scoreCalculatorSupplier = scoreCalculator;
         this.speciesCount = speciesCount;
         this.metaoptimizer = metaoptimizer;
+        this.batchPercentage = batchPercentage;
     }
 
     @Override public MLDataSet mlDataSet(Ignite ignite) {
@@ -73,8 +79,21 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
 
         ArrayList<MLDataPair> lst = new ArrayList<>();
 
-        for (Cache.Entry<Integer, MLDataPair> entry : cache.localEntries())
-            lst.add(entry.getValue());
+        ClusterNode localNode = ignite.cluster().localNode();
+
+        List<Integer> localKeys = IntStream.range(0, datasetSize()).boxed().filter(i -> ignite.affinity(cacheName).mapKeyToNode(i).equals(localNode)).collect(Collectors.toList());
+
+        int totalKeys = localKeys.size();
+        int subsetSize = (int)(totalKeys * batchPercentage);
+
+        int[] subset = Util.selectKDistinct(totalKeys, subsetSize);
+
+        for (int i : subset)
+            lst.add(cache.get(localKeys.get(i)));
+
+//
+//        for (Cache.Entry<Integer, MLDataPair> entry : cache.localEntries())
+//            lst.add(entry.getValue());
 
         return new BasicMLDataSet(lst);
     }

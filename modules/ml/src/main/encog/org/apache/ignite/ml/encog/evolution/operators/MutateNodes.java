@@ -19,6 +19,7 @@ package org.apache.ignite.ml.encog.evolution.operators;
 
 import java.util.Random;
 import org.apache.ignite.ml.encog.NeuralNetworkUtils;
+import org.apache.ignite.ml.encog.Util;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.encog.ml.MethodFactory;
 import org.encog.ml.ea.genome.Genome;
@@ -51,7 +52,7 @@ public class MutateNodes extends IgniteEvolutionaryOperator {
         int offspringIdx) {
         BasicNetwork parent = (BasicNetwork)((MLMethodGenome)parents[parentIndex]).getPhenotype();
         BasicNetwork off = (BasicNetwork)parent.clone();
-        int[] nodeNumbers = selectNodes(NeuralNetworkUtils.innerNeuronsCount(parent));
+        int[] nodeNumbers = Util.selectKDistinct(NeuralNetworkUtils.innerNeuronsCount(parent), nodesToMutateCnt);
 
         for (int nodeNumber : nodeNumbers) {
             int[] ln = NeuralNetworkUtils.toXY(parent, nodeNumber, true);
@@ -75,22 +76,5 @@ public class MutateNodes extends IgniteEvolutionaryOperator {
     }
 
     // Reservoir sampling to choose nodesToMutateCnt distinct nodes from n nodes.
-    private int[] selectNodes(int n) {
-        int i;
 
-        int res[] = new int[nodesToMutateCnt];
-        for (i = 0; i < nodesToMutateCnt; i++)
-            res[i] = i;
-
-        Random r = new Random();
-
-        for (; i < n; i++) {
-            int j = r.nextInt(i + 1);
-
-            if(j < nodesToMutateCnt)
-                res[j] = i;
-        }
-
-        return res;
-    }
 }

@@ -126,12 +126,13 @@ public class GenTest  extends GridCommonAbstractTest {
         GaTrainerCacheInput<BasicNetwork, MLMethodGenome, MLMethodGenome> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
             mnist.getFst().length,
-            25,
+            50,
             evoOps,
-            5,
+            10,
             (ctx, ignite) -> new TrainingSetScore(ctx.input().mlDataSet(ignite)),
             3,
-            new AddLeaders(0.2)
+            new AddLeaders(0.2),
+            0.1
             );
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);

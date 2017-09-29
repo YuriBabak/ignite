@@ -47,7 +47,7 @@ import org.junit.Test;
 
 public class GenTest  extends GridCommonAbstractTest {
     public static final String MNIST_LOCATION = "/home/enny/Downloads/";
-    private static final int NODE_COUNT = 3;
+    private static final int NODE_COUNT = 1;
 
     /** Grid instance. */
     protected Ignite ignite;

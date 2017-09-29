@@ -69,6 +69,7 @@ public class ReplaceLoserWithLeader implements Metaoptimizer<MLMethodGenome, MLM
         }
 
         population.getSpecies().get(0).getMembers().addAll(genomes);
+        population.getSpecies().get(0).getMembers().sort(Comparator.comparingDouble(Genome::getScore));
 
         return train;
     }

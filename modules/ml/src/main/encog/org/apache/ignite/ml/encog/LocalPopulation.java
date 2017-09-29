@@ -81,14 +81,14 @@ public class LocalPopulation<S, U extends Serializable> {
         return res;
     }
 
-    private void addGenome(MLMethodGenome genome, int speciesNum, Map<Integer, Population> m) {
-        if (!m.containsKey(speciesNum)) {
+    private void addGenome(MLMethodGenome genome, int subPopulation, Map<Integer, Population> m) {
+        if (!m.containsKey(subPopulation)) {
             BasicPopulation pop = new BasicPopulation();
             pop.createSpecies();
-            m.put(speciesNum, pop);
+            m.put(subPopulation, pop);
         }
 
-        Population pop = m.get(speciesNum);
+        Population pop = m.get(subPopulation);
         pop.setPopulationSize(pop.getPopulationSize() + 1);
         pop.getSpecies().get(0).add(genome);
         genome.setPopulation(pop);

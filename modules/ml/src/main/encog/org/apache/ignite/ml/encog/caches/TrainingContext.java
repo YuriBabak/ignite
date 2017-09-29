@@ -30,7 +30,6 @@ import org.encog.ml.factory.MLMethodFactory;
 // TODO: maybe we should store in cache only input and all other, non-constant data should be send each time.
 public class TrainingContext<S, U extends Serializable> implements Serializable {
     private GATrainerInput<? extends MLMethod, S, U> input;
-    U data;
 
     public TrainingContext() {
 
@@ -42,13 +41,5 @@ public class TrainingContext<S, U extends Serializable> implements Serializable 
 
     public GATrainerInput<? extends MLMethod, S, U> input() {
         return input;
-    }
-
-    public void setData(U data) {
-        this.data = data;
-    }
-
-    public U data() {
-        return data;
     }
 }

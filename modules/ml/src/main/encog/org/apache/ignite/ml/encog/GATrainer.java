@@ -86,7 +86,7 @@ public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData
         while (!isCompleted())
             aggregatedStats = execute(new GroupTrainerTask<>(input.metaoptimizer()::statsAggregator, aggregatedStats), trainingUUID);
 
-        return buildIgniteModel(globalLead);
+        return buildIgniteModel(input.metaoptimizer().finalResult(aggregatedStats));
     }
 
     @NotNull private static <S, U extends Serializable> List<S> initialIteration(UUID trainingUUID) {

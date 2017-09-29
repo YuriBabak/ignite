@@ -23,9 +23,11 @@ import java.util.List;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.encog.ml.ea.population.Population;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
+import org.encog.ml.genetic.MLMethodGenome;
 
 public interface Metaoptimizer<S, U extends Serializable> extends Serializable {
     S extractStats(Population population, TrainingContext ctx);
     U statsAggregator(Collection<List<S>> stats);
     MLMethodGeneticAlgorithm statsHandler(MLMethodGeneticAlgorithm train, U data);
+    MLMethodGenome finalResult(U data);
 }

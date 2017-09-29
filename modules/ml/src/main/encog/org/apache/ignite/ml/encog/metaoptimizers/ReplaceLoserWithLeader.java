@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import org.apache.ignite.ml.encog.caches.GenomesCache;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.encog.ml.ea.genome.BasicGenome;
 import org.encog.ml.ea.genome.Genome;
@@ -37,6 +38,7 @@ public class ReplaceLoserWithLeader implements Metaoptimizer<MLMethodGenome, MLM
 
     @Override public MLMethodGenome extractStats(Population population, TrainingContext ctx) {
         MLMethodGenome locallyBest = (MLMethodGenome)population.getBestGenome();
+        GenomesCache.processForSaving(locallyBest);
         System.out.println("Locally best score is " + locallyBest.getScore());
         return locallyBest;
     }
@@ -69,5 +71,9 @@ public class ReplaceLoserWithLeader implements Metaoptimizer<MLMethodGenome, MLM
         population.getSpecies().get(0).getMembers().addAll(genomes);
 
         return train;
+    }
+
+    @Override public MLMethodGenome finalResult(MLMethodGenome data) {
+        return data;
     }
 }

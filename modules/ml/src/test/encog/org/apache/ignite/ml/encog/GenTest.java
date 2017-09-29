@@ -117,7 +117,8 @@ public class GenTest  extends GridCommonAbstractTest {
             return res;
         };
 
-        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(new WeightMutation(0.4, "wm"),
+        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
+            new WeightMutation(0.4, "wm"),
 //            new WeightCrossover(0.5),
 //            new NodeCrossover(0.5),
             new MutateNodes(10, 0.2, "mn"));//, new Hillclimb(0.4));

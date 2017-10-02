@@ -31,6 +31,8 @@ import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator
 import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
+import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
+import org.apache.ignite.ml.encog.evolution.operators.WeightCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -111,7 +113,7 @@ public class GenTest  extends GridCommonAbstractTest {
         IgniteSupplier<BasicNetwork> fact = () -> {
             BasicNetwork res = new BasicNetwork();
             res.addLayer(new BasicLayer(null,true,28 * 28));
-            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),true,200));
+            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),true,50));
             res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSoftMax(),false,10));
             res.getStructure().finalizeStructure();
 
@@ -121,20 +123,22 @@ public class GenTest  extends GridCommonAbstractTest {
 
         List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
             new WeightMutation(0.4, "wm"),
-//            new WeightCrossover(0.5),
-//            new NodeCrossover(0.5),
-            new MutateNodes(10, 0.2, "mn"));//, new Hillclimb(0.4));
+//            new WeightCrossover(0.5, "wc"),
+            new NodeCrossover(0.5, "nc"),
+            new MutateNodes(10, 0.2, "mn")
+//            new Hillclimb(0.4));
+        );
 
         GaTrainerCacheInput<BasicNetwork, MLMethodGenome, MLMethodGenome> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
             mnist.getFst().length,
-            50,
+            60,
             evoOps,
-            10,
+            50,
             (ctx, ignite) -> new TrainingSetScore(ctx.input().mlDataSet(ignite)),
             3,
             new AddLeaders(0.2),
-            0.1
+            0.02
             );
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);
@@ -179,6 +183,8 @@ public class GenTest  extends GridCommonAbstractTest {
                 double[] predict = model.predict(new BasicMLData(k[i]));
 //                if(!Arrays.equals(predict, v[i]))
 //                System.out.println();
+                if (i % 100 == 0)
+                    System.out.println(Arrays.toString(predict));
                 int predictedDigit = toDigit(predict);
                 int idealDigit = toDigit(v[i]);
 //                System.out.println(predictedDigit + "," + idealDigit);

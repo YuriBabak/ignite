@@ -17,15 +17,11 @@
 
 package org.apache.ignite.ml.encog.metaoptimizers;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
-import org.apache.ignite.ml.math.functions.Functions;
 import org.encog.ml.ea.genome.BasicGenome;
 import org.encog.ml.ea.genome.Genome;
 import org.encog.ml.ea.population.Population;

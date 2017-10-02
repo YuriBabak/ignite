@@ -54,7 +54,7 @@ import org.jetbrains.annotations.NotNull;
  * TODO: add description.
  */
 public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData, double[], GATrainerInput<? extends MLMethod, S, U>, EncogMethodWrapper> {
-    private static final int MAX_ITERATION = 30;
+    private static final int MAX_ITERATION = 60;
     public static String CACHE = "encog_nets";
 
     private Ignite ignite;

@@ -40,7 +40,8 @@ import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJob {
     private UUID trainingUuid;
     private U data;
-    private AtomicLong al;
+    private static AtomicLong al = new AtomicLong(0);
+    private int nodesCnt = 3;
 
     public LocalTrainingTickJob(UUID trainingUuid, U data) {
         this.trainingUuid = trainingUuid;
@@ -91,7 +92,9 @@ public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJ
 
         });
 
-        Encog.getInstance().shutdown();
+        // Shutdown Encog only if last node has finished it's computation.
+        if ((al.getAndIncrement() + 1) % nodesCnt == 0)
+            Encog.getInstance().shutdown();
 
         return res;
     }
@@ -105,6 +108,9 @@ public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJ
         MLMethodGeneticAlgorithm training = new MLMethodGeneticAlgorithm(mlMtdFactory, score, pop.getSpecies().get(0).getMembers().size());
 
         training.getGenetic().setPopulation(pop);
+
+        // TODO: Remove
+        training.getGenetic().getOperators().clear();
 
         List<IgniteEvolutionaryOperator> evoOps = ctx.input().evolutionaryOperators();
         evoOps.forEach(operator -> {

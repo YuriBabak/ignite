@@ -45,20 +45,25 @@ public class NodeCrossover extends IgniteEvolutionaryOperator {
         BasicNetwork parent2 = (BasicNetwork)((MLMethodGenome)parents[1]).getPhenotype();
         BasicNetwork child = (BasicNetwork)parent1.clone();
 
-        int count = parent1.getLayerCount();
+        int cnt = parent1.getLayerCount();
 
-        for (int i = 0; i < count - 1; i++) {
-            for (int j = 0; j < parent1.getLayerNeuronCount(i); j++) {
+        for (int l = 1; l < cnt - 1; l++) {
+            for (int n = 0; n < parent1.getLayerNeuronCount(l); n++) {
                 // true - first parent, false - second parent
                 boolean isFirst = rnd.nextBoolean();
 
-                for (int k = 0; k < parent1.getLayerNeuronCount(i + 1); k++)
-                    if (!isFirst)
-                        child.setWeight(i, j, k, parent2.getWeight(i, j, k));
+                if (!isFirst) {
+                    // Set inputs
+                    for (int k = 0; k < parent1.getLayerNeuronCount(l - 1); k++)
+                        child.setWeight(l - 1, k, n, parent2.getWeight(l - 1, k, n));
+
+                    // Set outputs
+                    for (int k = 0; k < parent1.getLayerNeuronCount(l + 1); k++)
+                        child.setWeight(l, n, k, parent2.getWeight(l, n, k));
+                }
             }
         }
 
         offspring[offspringIndex] = new MLMethodGenome(child);
-
     }
 }

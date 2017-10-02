@@ -84,13 +84,13 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
         List<Integer> localKeys = IntStream.range(0, datasetSize()).boxed().filter(i -> ignite.affinity(cacheName).mapKeyToNode(i).equals(localNode)).collect(Collectors.toList());
 
         int totalKeys = localKeys.size();
+        System.out.println("Local keys size: " + totalKeys);
         int subsetSize = (int)(totalKeys * batchPercentage);
 
         int[] subset = Util.selectKDistinct(totalKeys, subsetSize);
 
         for (int i : subset)
             lst.add(cache.get(localKeys.get(i)));
-
 //
 //        for (Cache.Entry<Integer, MLDataPair> entry : cache.localEntries())
 //            lst.add(entry.getValue());

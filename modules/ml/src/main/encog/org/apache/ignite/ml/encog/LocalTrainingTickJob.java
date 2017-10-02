@@ -106,6 +106,9 @@ public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJ
 
         training.getGenetic().setPopulation(pop);
 
+        // TODO: Remove
+        training.getGenetic().getOperators().clear();
+
         List<IgniteEvolutionaryOperator> evoOps = ctx.input().evolutionaryOperators();
         evoOps.forEach(operator -> {
             operator.setIgnite(ignite);

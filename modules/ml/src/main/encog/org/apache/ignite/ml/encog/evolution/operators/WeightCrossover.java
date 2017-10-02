@@ -59,6 +59,5 @@ public class WeightCrossover extends IgniteEvolutionaryOperator {
         }
 
         offspring[offspringIndex] = new MLMethodGenome(child);
-
     }
 }

@@ -17,19 +17,19 @@
 
 package org.apache.ignite.ml.encog;
 
+import java.io.Serializable;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
-import org.apache.ignite.ml.encog.evolution.replacement.UpdateStrategy;
+import org.apache.ignite.ml.encog.metaoptimizers.Metaoptimizer;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.encog.ml.CalculateScore;
 import org.encog.ml.MLEncodable;
 import org.encog.ml.MLMethod;
 import org.encog.ml.data.MLDataSet;
-import org.encog.ml.ea.opp.EvolutionaryOperator;
 
-public interface GATrainerInput<T extends MLMethod & MLEncodable> {
+public interface GATrainerInput<T extends MLMethod & MLEncodable, S, U extends Serializable> {
     /**
      * Returns dataset which is used as a training set on each of trainer nodes.
      * @return Dataset which is used as a training set on each of trainer nodes.
@@ -40,15 +40,17 @@ public interface GATrainerInput<T extends MLMethod & MLEncodable> {
 
     int datasetSize();
 
-    int populationSize();
+    int subPopulationSize();
 
     List<IgniteEvolutionaryOperator> evolutionaryOperators();
-
-    UpdateStrategy replaceStrategy();
 
     default int iterationsPerLocalTick() {
         return 1;
     }
 
     CalculateScore scoreCalculator(TrainingContext ctx, Ignite ignite);
+
+    int subPopulationsCount();
+
+    Metaoptimizer<S, U> metaoptimizer();
 }

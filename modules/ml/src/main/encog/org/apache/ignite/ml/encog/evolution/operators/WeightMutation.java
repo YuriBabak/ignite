@@ -27,8 +27,8 @@ import org.encog.neural.networks.BasicNetwork;
  * TODO: use distribution from ctx.
  */
 public class WeightMutation extends IgniteEvolutionaryOperator {
-    public WeightMutation(double prob){
-        super(prob);
+    public WeightMutation(double prob, String operatorId){
+        super(prob, operatorId);
     }
 
     @Override public int offspringProduced() {

@@ -17,8 +17,12 @@
 
 package org.apache.ignite.ml.encog;
 
+import java.io.Serializable;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -30,17 +34,17 @@ import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator
 import org.encog.Encog;
 import org.encog.ml.CalculateScore;
 import org.encog.ml.MethodFactory;
-import org.encog.ml.data.MLDataSet;
 import org.encog.ml.ea.population.Population;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
-import org.encog.ml.genetic.MLMethodGenome;
-import org.encog.neural.networks.training.TrainingSetScore;
 
-public class LocalTrainingTickJob implements ComputeJob {
+public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJob {
     private UUID trainingUuid;
+    private U data;
+    private AtomicLong al;
 
-    public LocalTrainingTickJob(UUID trainingUuid) {
+    public LocalTrainingTickJob(UUID trainingUuid, U data) {
         this.trainingUuid = trainingUuid;
+        this.data = data;
     }
 
     @Override public void cancel() {
@@ -50,21 +54,57 @@ public class LocalTrainingTickJob implements ComputeJob {
     // 1. Load population
     // 2. Do several iterations of evolution
     // 3. Choose best and return it.
-    @Override public MLMethodGenome execute() throws IgniteException {
+    @Override public List<S> execute() throws IgniteException {
         // Load every genome from cache
         Ignite ignite = Ignition.localIgnite();
 
-        LocalPopulation locPop = GenomesCache.localPopulation(trainingUuid, ignite);
-        Population population = locPop.get();
+        LocalPopulation<S, U> locPop = GenomesCache.localPopulation(trainingUuid, ignite);
+        Map<Integer, Population> map = locPop.get();
+        List<S> res = new LinkedList<>();
 
-        TrainingContext ctx = TrainingContextCache.getOrCreate(ignite).get(trainingUuid);
+        map.entrySet().forEach(entry -> {
+            Population population = entry.getValue();
+            int subPopulationNum = entry.getKey();
+
+            TrainingContext<S, U> ctx = TrainingContextCache.getOrCreate(ignite).get(trainingUuid);
+            MLMethodGeneticAlgorithm training = ctx.input().metaoptimizer().statsHandler(initTraining(population, ignite), Cloner.deepCopy(data));
+
+            int i = 0;
+            while (i < ctx.input().iterationsPerLocalTick()) {
+                training.iteration();
+                i++;
+            }
+
+            int newSize = training.getGenetic().getPopulation().getSpecies().get(0).getMembers().size();
+
+            System.out.println("New population size: " + newSize);
+
+            training.finishTraining();
+
+            res.add(ctx.input().metaoptimizer().extractStats(training.getGenetic().getPopulation(), ctx));
+
+            int oldSize = GenomesCache.getOrCreate(ignite).size();
+
+            locPop.rewrite(subPopulationNum, training.getGenetic().getPopulation().getSpecies().get(0).getMembers());
+
+            System.out.println("CS: " + oldSize + "," + GenomesCache.getOrCreate(ignite).size());
+
+        });
+
+        Encog.getInstance().shutdown();
+
+        return res;
+    }
+
+    private MLMethodGeneticAlgorithm initTraining(Population pop, Ignite ignite) {
+        TrainingContext<S, U> ctx = TrainingContextCache.getOrCreate(ignite).get(trainingUuid);
         MethodFactory mlMtdFactory = () -> ctx.input().methodFactory().get();
 
         CalculateScore score = ctx.input().scoreCalculator(ctx, ignite);
 
-        MLMethodGeneticAlgorithm training = new MLMethodGeneticAlgorithm(mlMtdFactory, score, population.getSpecies().get(0).getMembers().size());
+        MLMethodGeneticAlgorithm training = new MLMethodGeneticAlgorithm(mlMtdFactory, score, pop.getSpecies().get(0).getMembers().size());
 
-        training.getGenetic().setPopulation(population);
+        training.getGenetic().setPopulation(pop);
 
         List<IgniteEvolutionaryOperator> evoOps = ctx.input().evolutionaryOperators();
         evoOps.forEach(operator -> {
@@ -73,34 +113,6 @@ public class LocalTrainingTickJob implements ComputeJob {
             training.getGenetic().addOperation(operator.probability(), operator);
         });
 
-        int i = 0;
-        while (i < ctx.input().iterationsPerLocalTick()) {
-            training.iteration();
-            i++;
-        }
-
-        int newSize = training.getGenetic().getPopulation().getSpecies().get(0).getMembers().size();
-
-        System.out.println("New population size: " + newSize);
-
-        training.finishTraining();
-
-        MLMethodGenome locallyBest = (MLMethodGenome)training.getGenetic().getBestGenome();
-
-        // These fields should not be serialized.
-        locallyBest.setPopulation(null);
-        locallyBest.setSpecies(null);
-
-        System.out.println("Locally best score is " + locallyBest.getScore());
-
-        int oldSize = GenomesCache.getOrCreate(ignite).size();
-
-        locPop.rewrite(training.getGenetic().getPopulation().getSpecies().get(0).getMembers());
-
-        System.out.println("CS: " + oldSize + "," + GenomesCache.getOrCreate(ignite).size());
-
-        Encog.getInstance().shutdown();
-
-        return locallyBest;
+        return training;
     }
 }

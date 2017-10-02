@@ -17,16 +17,15 @@
 
 package org.apache.ignite.ml.encog;
 
+import java.io.Serializable;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.caches.TrainingContextCache;
@@ -38,11 +37,13 @@ import org.encog.ml.ea.species.Species;
 import org.encog.ml.genetic.MLMethodGenome;
 import org.encog.ml.genetic.MLMethodGenomeFactory;
 
-public class LocalPopulation {
+public class LocalPopulation<S, U extends Serializable> {
     private UUID trainingUuid;
     private Ignite ignite;
-    private Population population;
-    private Set<IgniteBiTuple<UUID, UUID>> localKeys = new HashSet<>();
+    // Species number -> species population
+    private Map<Integer, Population> population;
+    // Species number -> species population
+    private Map<Integer, List<GenomesCache.Key>> localKeys = new HashMap<>();
 
     public LocalPopulation(UUID trainingUuid, Ignite ignite) {
         this.trainingUuid = trainingUuid;
@@ -50,51 +51,65 @@ public class LocalPopulation {
         population = load();
     }
 
-    private Population load() {
-        BasicPopulation res = new BasicPopulation();
+    private Map<Integer, Population> load() {
+        Map<Integer, Population> res = new HashMap<>();
 
         // TODO: temporary we filter genomes for the current training in this simple way. Better to make SQL query by training uuid.
-        int genomesCnt = 0;
+        for (Cache.Entry<GenomesCache.Key, MLMethodGenome> entry : GenomesCache.getOrCreate(ignite).localEntries()) {
+            if (entry.getKey().trainingUuid().equals(trainingUuid)) {
+                addGenome(entry.getValue(), entry.getKey().subPopulation(), res);
 
-        Species species = res.createSpecies();
+                if (!localKeys.containsKey(entry.getKey().subPopulation()))
+                    localKeys.put(entry.getKey().subPopulation(), new LinkedList<>());
 
-        for (Cache.Entry<IgniteBiTuple<UUID, UUID>, MLMethodGenome> entry : GenomesCache.getOrCreate(ignite).localEntries()) {
-            if (entry.getKey().get1().equals(trainingUuid)) {
-                species.add(entry.getValue());
-                localKeys.add(entry.getKey());
-                genomesCnt++;
+                localKeys.get(entry.getKey().subPopulation()).add(entry.getKey());
             }
         }
 
-        species.getMembers().sort(Comparator.comparing(Genome::getScore));
-        Genome best = species.getMembers().get(0);
-        species.setLeader(best);
-        res.setBestGenome(best);
+        res.values().forEach(population -> {
+            Species species = population.getSpecies().get(0);
+            species.getMembers().sort(Comparator.comparing(Genome::getScore));
+            Genome best = species.getMembers().get(0);
+            species.setLeader(best);
+            population.setBestGenome(best);
 
-        res.setPopulationSize(genomesCnt);
-
-        TrainingContext ctx = TrainingContextCache.getOrCreate(ignite).get(trainingUuid);
-        MethodFactory mlMtdFactory = () -> ctx.input().methodFactory().get();
-        res.setGenomeFactory(new MLMethodGenomeFactory(mlMtdFactory, res));
+            TrainingContext<S, U> ctx = TrainingContextCache.getOrCreate(ignite).get(trainingUuid);
+            MethodFactory mlMtdFactory = () -> ctx.input().methodFactory().get();
+            population.setGenomeFactory(new MLMethodGenomeFactory(mlMtdFactory, population));
+        });
 
         return res;
     }
 
-    public Population get() {
+    private void addGenome(MLMethodGenome genome, int subPopulation, Map<Integer, Population> m) {
+        if (!m.containsKey(subPopulation)) {
+            BasicPopulation pop = new BasicPopulation();
+            pop.createSpecies();
+            m.put(subPopulation, pop);
+        }
+
+        Population pop = m.get(subPopulation);
+        pop.setPopulationSize(pop.getPopulationSize() + 1);
+        pop.getSpecies().get(0).add(genome);
+        genome.setPopulation(pop);
+    }
+
+    public Map<Integer, Population> get() {
         return population;
     }
 
-    public void rewrite(List<Genome> toSave) {
-        assert toSave.size() == localKeys.size();
+    public void rewrite(int subPopulation, List<Genome> toSave) {
+        // We do not save least fit genomes
+//        assert toSave.size() == localKeys.get(subPopulation).size();
+        List<Genome> best = toSave.subList(0, localKeys.get(subPopulation).size());
 
-        Map<IgniteBiTuple<UUID, UUID>, MLMethodGenome> m = new HashMap<>();
+        Map<GenomesCache.Key, MLMethodGenome> m = new HashMap<>();
 
-        toSave.forEach(GenomesCache::processForSaving);
+        best.forEach(GenomesCache::processForSaving);
 
         int i = 0;
-        for (IgniteBiTuple<UUID, UUID> key : localKeys) {
-            m.put(key, (MLMethodGenome)toSave.get(i));
-        }
+        for (GenomesCache.Key key : localKeys.get(subPopulation))
+            m.put(key, (MLMethodGenome)best.get(i));
 
         GenomesCache.getOrCreate(ignite).putAll(m);
     }

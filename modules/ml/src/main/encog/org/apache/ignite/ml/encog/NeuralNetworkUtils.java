@@ -19,8 +19,13 @@ package org.apache.ignite.ml.encog;
 
 import org.encog.neural.networks.BasicNetwork;
 
+/**
+ * Some NN-related utils.
+ */
 public class NeuralNetworkUtils {
-    // Return coordinates of neuron in format (layer, neuronInLayer)
+    /*
+     * Return coordinates of neuron in format (layer, neuronInLayer).
+     */
     public static int[] toXY(BasicNetwork n, int neuronNumber, boolean isInner) {
         int[] res = new int[2];
 

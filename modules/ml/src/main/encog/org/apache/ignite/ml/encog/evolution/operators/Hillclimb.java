@@ -27,8 +27,8 @@ import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.ContainsFlat;
 
 public class Hillclimb extends IgniteEvolutionaryOperator {
-    public Hillclimb(double prob) {
-        super(prob);
+    public Hillclimb(double prob, String operatorId) {
+        super(prob, operatorId);
     }
 
     @Override public int offspringProduced() {

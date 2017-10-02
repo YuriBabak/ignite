@@ -17,32 +17,54 @@
 
 package org.apache.ignite.ml.encog.caches;
 
-import java.util.Comparator;
-import java.util.List;
 import java.util.UUID;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.encog.LocalPopulation;
-import org.encog.ml.MethodFactory;
 import org.encog.ml.ea.genome.Genome;
-import org.encog.ml.ea.population.BasicPopulation;
-import org.encog.ml.ea.population.Population;
-import org.encog.ml.ea.species.Species;
 import org.encog.ml.genetic.MLMethodGenome;
-import org.encog.ml.genetic.MLMethodGenomeFactory;
 
 public class GenomesCache {
     public static final String NAME = "GA_GENOMES_CACHE";
 
+    public static Affinity<Key> affinity(Ignite ignite) {
+        return ignite.affinity(NAME);
+    }
+
+    public static class Key {
+        private UUID trainingUuid;
+        private UUID genomeUuid;
+        @AffinityKeyMapped
+        private Integer subPopulation;
+
+        public Key(UUID trainingUuid, UUID genomeUuid, Integer subPopulation) {
+            this.trainingUuid = trainingUuid;
+            this.genomeUuid = genomeUuid;
+            this.subPopulation = subPopulation;
+        }
+
+        public UUID trainingUuid() {
+            return trainingUuid;
+        }
+
+        public UUID genomeUuid() {
+            return genomeUuid;
+        }
+
+        public Integer subPopulation() {
+            return subPopulation;
+        }
+    }
+
     // The key of the cache is uuid of training and uuid of genome
-    public static IgniteCache<IgniteBiTuple<UUID, UUID>, MLMethodGenome> getOrCreate(Ignite ignite) {
-        CacheConfiguration<IgniteBiTuple<UUID, UUID>, MLMethodGenome> cfg = new CacheConfiguration<>();
+    public static IgniteCache<Key, MLMethodGenome> getOrCreate(Ignite ignite) {
+        CacheConfiguration<Key, MLMethodGenome> cfg = new CacheConfiguration<>();
 
         // Write to primary.
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);

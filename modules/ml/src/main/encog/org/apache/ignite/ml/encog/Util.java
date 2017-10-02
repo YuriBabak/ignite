@@ -15,13 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.encog.evolution.replacement;
+package org.apache.ignite.ml.encog;
 
-import java.io.Serializable;
-import java.util.List;
-import org.encog.ml.ea.genome.Genome;
-import org.encog.ml.ea.population.Population;
+import java.util.Random;
 
-public interface UpdateStrategy extends Serializable {
-    List<Genome> getNewGenomes(Population population, Genome globalLeader);
+public class Util {
+    public static int[] selectKDistinct(int n, int k) {
+        int i;
+
+        int res[] = new int[k];
+        for (i = 0; i < k; i++)
+            res[i] = i;
+
+        Random r = new Random();
+
+        for (; i < n; i++) {
+            int j = r.nextInt(i + 1);
+
+            if(j < k)
+                res[j] = i;
+        }
+
+        return res;
+    }
 }

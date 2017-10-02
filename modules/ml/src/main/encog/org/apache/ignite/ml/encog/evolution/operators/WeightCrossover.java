@@ -26,8 +26,8 @@ import org.encog.neural.networks.BasicNetwork;
  * TODO: add description.
  */
 public class WeightCrossover extends IgniteEvolutionaryOperator {
-    public WeightCrossover(double prob) {
-        super(prob);
+    public WeightCrossover(double prob, String operatorId) {
+        super(prob, operatorId);
     }
 
     @Override public int offspringProduced() {
@@ -49,10 +49,12 @@ public class WeightCrossover extends IgniteEvolutionaryOperator {
 
         for (int i = 0; i < count - 1; i++) {
             for (int j = 0; j < parent1.getLayerNeuronCount(i); j++) {
-                for (int k = 0; k < parent1.getLayerNeuronCount(i + 1); k++)
+                for (int k = 0; k < parent1.getLayerNeuronCount(i + 1); k++) {
                     // true - first parent, false - second parent
-                    if (!rnd.nextBoolean())
+                    boolean isFirst = rnd.nextBoolean();
+                    if (!isFirst)
                         child.setWeight(i, j, k, parent2.getWeight(i, j, k));
+                }
             }
         }
 

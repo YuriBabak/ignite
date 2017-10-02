@@ -27,12 +27,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
-import org.apache.ignite.ml.encog.evolution.operators.Hillclimb;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightCrossover;
+import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
 import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
-import org.apache.ignite.ml.encog.evolution.replacement.ReplaceLoserwWithLeadStrategy;
+import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
@@ -41,6 +41,7 @@ import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.basic.BasicMLData;
 import org.encog.ml.data.basic.BasicMLDataPair;
+import org.encog.ml.genetic.MLMethodGenome;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.TrainingSetScore;
@@ -97,8 +98,8 @@ public class GenTest  extends GridCommonAbstractTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         System.out.println("Reading mnist...");
-//        MnistUtils.Pair<double[][], double[][]> mnist = MnistUtils.mnist(MNIST_LOCATION + "train-images-idx3-ubyte", MNIST_LOCATION + "train-labels-idx1-ubyte", new Random(), 60_000);
-        MnistUtils.Pair<double[][], double[][]> mnist = MnistUtils.mnist(MNIST_LOCATION + "t10k-images-idx3-ubyte", MNIST_LOCATION + "t10k-labels-idx1-ubyte", new Random(), 10_000);
+        MnistUtils.Pair<double[][], double[][]> mnist = MnistUtils.mnist(MNIST_LOCATION + "train-images-idx3-ubyte", MNIST_LOCATION + "train-labels-idx1-ubyte", new Random(), 60_000);
+//        MnistUtils.Pair<double[][], double[][]> mnist = MnistUtils.mnist(MNIST_LOCATION + "t10k-images-idx3-ubyte", MNIST_LOCATION + "t10k-labels-idx1-ubyte", new Random(), 10_000);
 
         System.out.println("Done.");
 
@@ -118,16 +119,23 @@ public class GenTest  extends GridCommonAbstractTest {
             return res;
         };
 
-        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(new WeightCrossover(1.0), new WeightMutation(0.1), new NodeCrossover(1.0));//, new Hillclimb(0.4));
+        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
+            new WeightMutation(0.4, "wm"),
+//            new WeightCrossover(0.5),
+//            new NodeCrossover(0.5),
+            new MutateNodes(10, 0.2, "mn"));//, new Hillclimb(0.4));
 
-        GaTrainerCacheInput<BasicNetwork> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
+        GaTrainerCacheInput<BasicNetwork, MLMethodGenome, MLMethodGenome> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
             mnist.getFst().length,
             50,
             evoOps,
-            new ReplaceLoserwWithLeadStrategy(0.1),
-            1,
-            (ctx, ignite) -> new TrainingSetScore(ctx.input().mlDataSet(ignite)));
+            10,
+            (ctx, ignite) -> new TrainingSetScore(ctx.input().mlDataSet(ignite)),
+            3,
+            new AddLeaders(0.2),
+            0.1
+            );
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);
 

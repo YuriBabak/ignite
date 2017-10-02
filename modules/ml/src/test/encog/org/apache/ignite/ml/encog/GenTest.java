@@ -30,6 +30,7 @@ import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
 import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
+import org.apache.ignite.ml.encog.evolution.operators.WeightCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -119,8 +120,8 @@ public class GenTest  extends GridCommonAbstractTest {
 
         List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
             new NodeCrossover(0.5, "nc"),
-            //            new WeightCrossover(0.5),
-            new WeightMutation(0.4, "wm"),
+            new WeightCrossover(0.5, "wc"),
+            new WeightMutation(0.2, "wm"),
             new MutateNodes(10, 0.2, "mn"));
 
         GaTrainerCacheInput<IgniteNetwork, MLMethodGenome, MLMethodGenome> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,

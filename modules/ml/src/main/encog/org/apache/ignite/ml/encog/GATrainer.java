@@ -18,11 +18,12 @@
 package org.apache.ignite.ml.encog;
 
 import java.io.Serializable;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -83,8 +84,19 @@ public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData
         Collection<List<S>> stats = CacheUtils.bcast(GenomesCache.NAME, () -> GATrainer.initialIteration(trainingUUID));
         U aggregatedStats = input.metaoptimizer().statsAggregator(stats);
 
-        while (!isCompleted())
+        while (!isCompleted()) {
+            Instant start = Instant.now();
+
             aggregatedStats = execute(new GroupTrainerTask<>(input.metaoptimizer()::statsAggregator, aggregatedStats), trainingUUID);
+
+            Instant end = Instant.now();
+            long seconds = Duration.between(start, end).getSeconds();
+
+            Duration estimatedTime = Duration.ofSeconds((MAX_ITERATION - iteration) * seconds);
+
+            System.out.printf("%nIteration %d took %d seconds, estimated time to end is %d minutes %d seconds%n%n",
+                iteration, seconds, estimatedTime.toMinutes(), estimatedTime.getSeconds() % 60);
+        }
 
         return buildIgniteModel(input.metaoptimizer().finalResult(aggregatedStats));
     }

@@ -52,7 +52,7 @@ public class WeightMutation extends IgniteEvolutionaryOperator {
                     double parentWeight = parent.getWeight(i, j, k);
                     double shift = (rnd.nextDouble() - 0.5) * 0.1;
 
-                    child.setWeight(i, j, k, parentWeight + rnd.nextDouble() - 0.5d);
+                    child.setWeight(i, j, k, parentWeight + shift);
                 }
             }
         }

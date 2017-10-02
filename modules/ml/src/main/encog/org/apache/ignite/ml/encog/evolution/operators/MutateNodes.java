@@ -62,13 +62,15 @@ public class MutateNodes extends IgniteEvolutionaryOperator {
             // Mutate inputs
             for (int i = 0; i < off.getLayerNeuronCount(layer - 1); i++) {
                 double curWeight = off.getWeight(layer - 1, i, neuron);
-                off.setWeight(layer - 1, i, neuron, curWeight + rnd.nextDouble());
+                double v = (rnd.nextDouble() - 0.5) * 0.1;
+                off.setWeight(layer - 1, i, neuron, curWeight + v);
             }
 
             // Mutate outputs
             for (int i = 0; i < off.getLayerNeuronCount(layer + 1); i++) {
                 double curWeight = off.getWeight(layer, neuron, i);
-                off.setWeight(layer, neuron, i, curWeight + rnd.nextDouble());
+                double v = (rnd.nextDouble() - 0.5) * 0.1;
+                off.setWeight(layer, neuron, i, curWeight + v);
             }
         }
 

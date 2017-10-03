@@ -42,6 +42,7 @@ import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.basic.BasicMLData;
 import org.encog.ml.data.basic.BasicMLDataPair;
 import org.encog.ml.genetic.MLMethodGenome;
+import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.TrainingSetScore;
 import org.junit.Test;
@@ -129,10 +130,10 @@ public class GenTest  extends GridCommonAbstractTest {
             mnist.getFst().length,
             60,
             evoOps,
-            50,
-            (ctx, ignite) -> new TrainingSetScore(ctx.input().mlDataSet(ignite)),
+            30,
+            (in, ignite) -> new TrainingSetScore(in.mlDataSet(ignite)),
             3,
-            new AddLeaders(0.2),
+            new AddLeaders(0.2),//.andThen(new LearningRateAdjuster()),
             0.02
             );
 

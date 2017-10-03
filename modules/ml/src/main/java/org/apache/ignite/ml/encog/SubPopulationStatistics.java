@@ -17,25 +17,6 @@
 
 package org.apache.ignite.ml.encog;
 
-import java.util.Random;
+public class SubPopulationStatistics {
 
-public class Util {
-    public static int[] selectKDistinct(int n, int k) {
-        int i;
-
-        int res[] = new int[k];
-        for (i = 0; i < k; i++)
-            res[i] = i;
-
-        Random r = new Random();
-
-        for (; i < n; i++) {
-            int j = r.nextInt(i + 1);
-
-            if(j < k)
-                res[j] = i;
-        }
-
-        return res;
-    }
 }

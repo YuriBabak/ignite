@@ -19,12 +19,12 @@ package org.apache.ignite.ml.encog.evolution.operators;
 
 import java.io.Serializable;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.ml.encog.caches.TrainingContext;
+import org.apache.ignite.ml.encog.GATrainerInput;
 import org.encog.ml.ea.opp.EvolutionaryOperator;
 import org.encog.ml.ea.train.EvolutionaryAlgorithm;
 
 public abstract class IgniteEvolutionaryOperator implements EvolutionaryOperator, Serializable {
-    private TrainingContext ctx;
+    private GATrainerInput input;
     private Ignite ignite;
     private double prob;
     private String operatorId;
@@ -40,12 +40,12 @@ public abstract class IgniteEvolutionaryOperator implements EvolutionaryOperator
         this.owner = theOwner;
     }
 
-    public void setContext(TrainingContext ctx) {
-        this.ctx = ctx;
+    public void setInput(GATrainerInput ctx) {
+        this.input = ctx;
     }
 
-    public TrainingContext context() {
-        return ctx;
+    public GATrainerInput input() {
+        return input;
     }
 
     public Ignite ignite() {

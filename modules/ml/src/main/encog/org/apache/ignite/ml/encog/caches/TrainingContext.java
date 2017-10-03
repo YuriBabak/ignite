@@ -18,7 +18,9 @@
 package org.apache.ignite.ml.encog.caches;
 
 import java.io.Serializable;
+import java.util.Map;
 import org.apache.ignite.ml.encog.GATrainerInput;
+import org.apache.ignite.ml.encog.SubPopulationStatistics;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.encog.ml.MLEncodable;
 import org.encog.ml.MLMethod;
@@ -29,17 +31,13 @@ import org.encog.ml.factory.MLMethodFactory;
 
 // TODO: maybe we should store in cache only input and all other, non-constant data should be send each time.
 public class TrainingContext<S, U extends Serializable> implements Serializable {
-    private GATrainerInput<? extends MLMethod, S, U> input;
+    private int currentIteration;
+    private Map<Integer, SubPopulationStatistics> subPopulationStatistics;
 
     public TrainingContext() {
 
     }
 
     public TrainingContext(GATrainerInput<? extends MLMethod, S, U> input) {
-        this.input = input;
-    }
-
-    public GATrainerInput<? extends MLMethod, S, U> input() {
-        return input;
     }
 }

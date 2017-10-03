@@ -35,7 +35,7 @@ public class TestTrainingSetCache {
 
     public static MLDataSet getMLDataSet(Ignite ignite, UUID trainingUuid) {
         // TODO: Maybe we should implement cache based dataset instead of reading it into list and initializing BasicMLDataset
-        int size = TrainingContextCache.getOrCreate(ignite).get(trainingUuid).input().datasetSize();
+        int size = InputCache.getOrCreate(ignite).get(trainingUuid).datasetSize();
 
         ArrayList<MLDataPair> lst = new ArrayList<>(size);
 

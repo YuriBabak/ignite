@@ -48,7 +48,7 @@ public interface GATrainerInput<T extends MLMethod & MLEncodable, S, U extends S
         return 1;
     }
 
-    CalculateScore scoreCalculator(TrainingContext ctx, Ignite ignite);
+    CalculateScore scoreCalculator(Ignite ignite);
 
     int subPopulationsCount();
 

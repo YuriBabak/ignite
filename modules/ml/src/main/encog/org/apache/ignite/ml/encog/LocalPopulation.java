@@ -26,9 +26,12 @@ import java.util.Map;
 import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
-import org.apache.ignite.ml.encog.caches.TrainingContextCache;
+import org.apache.ignite.ml.encog.caches.InputCache;
+import org.encog.ml.MLEncodable;
+import org.encog.ml.MLMethod;
 import org.encog.ml.MethodFactory;
 import org.encog.ml.ea.genome.Genome;
 import org.encog.ml.ea.population.BasicPopulation;
@@ -73,8 +76,8 @@ public class LocalPopulation<S, U extends Serializable> {
             species.setLeader(best);
             population.setBestGenome(best);
 
-            TrainingContext<S, U> ctx = TrainingContextCache.getOrCreate(ignite).get(trainingUuid);
-            MethodFactory mlMtdFactory = () -> ctx.input().methodFactory().get();
+            GATrainerInput<? extends MLMethod, S, U> input = InputCache.getOrCreate(ignite).get(trainingUuid);
+            MethodFactory mlMtdFactory = () -> input.methodFactory().get();
             population.setGenomeFactory(new MLMethodGenomeFactory(mlMtdFactory, population));
         });
 

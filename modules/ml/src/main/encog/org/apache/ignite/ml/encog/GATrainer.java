@@ -18,6 +18,8 @@
 package org.apache.ignite.ml.encog;
 
 import java.io.Serializable;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -59,7 +61,7 @@ import org.jetbrains.annotations.NotNull;
  * TODO: add description.
  */
 public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData, double[], GATrainerInput<? extends MLMethod, S, U>, EncogMethodWrapper> {
-    private static final int MAX_ITERATION = 30;
+    private static final int MAX_ITERATION = 60;
     public static String CACHE = "encog_nets";
 
     private Ignite ignite;
@@ -89,8 +91,18 @@ public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData
         Map<Integer, U> aggregatedStats = input.metaoptimizer().statsAggregator(stats);
 
         while (!isCompleted()) {
+            Instant start = Instant.now();
+
             GroupTrainerTask<S, U> task = new GroupTrainerTask<>(input.metaoptimizer()::statsAggregator, aggregatedStats);
             aggregatedStats = execute(task, trainingUUID);
+
+            Instant end = Instant.now();
+            long seconds = Duration.between(start, end).getSeconds();
+
+            Duration estimatedTime = Duration.ofSeconds((MAX_ITERATION - iteration) * seconds);
+
+            System.out.printf("%nIteration %d took %d seconds, estimated time to end is %d minutes %d seconds%n%n",
+                iteration, seconds, estimatedTime.toMinutes(), estimatedTime.getSeconds() % 60);
         }
 
         MLMethodGenome genome = CacheUtils.bcast(GenomesCache.NAME, () -> GATrainer.collectBest(trainingUUID)).stream().filter(Objects::nonNull).min(Comparator.comparingDouble(MLMethodGenome::getScore)).get();

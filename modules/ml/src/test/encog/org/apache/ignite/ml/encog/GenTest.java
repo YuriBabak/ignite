@@ -25,7 +25,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
@@ -34,7 +33,6 @@ import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
-import org.apache.ignite.ml.encog.metaoptimizers.LearningRateAdjuster;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
@@ -50,7 +48,7 @@ import org.encog.neural.networks.training.TrainingSetScore;
 import org.junit.Test;
 
 public class GenTest  extends GridCommonAbstractTest {
-    public static final String MNIST_LOCATION = "/home/enny/Downloads/";
+    public static final String MNIST_LOCATION = "/home/ybabak/Downloads/mnist/";
     private static final int NODE_COUNT = 3;
 
     /** Grid instance. */
@@ -82,7 +80,7 @@ public class GenTest  extends GridCommonAbstractTest {
     }
 
     @Override protected long getTestTimeout() {
-        return 6000000;
+        return 60000000;
     }
 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName,
@@ -110,8 +108,8 @@ public class GenTest  extends GridCommonAbstractTest {
         System.out.println("Done.");
 
         // create training data
-        IgniteSupplier<BasicNetwork> fact = () -> {
-            BasicNetwork res = new BasicNetwork();
+        IgniteSupplier<IgniteNetwork> fact = () -> {
+            IgniteNetwork res = new IgniteNetwork();
             res.addLayer(new BasicLayer(null,true,28 * 28));
             res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),true,50));
             res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSoftMax(),false,10));
@@ -122,14 +120,12 @@ public class GenTest  extends GridCommonAbstractTest {
         };
 
         List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
-            new WeightMutation(0.4, 0.05,"wm"),
-//            new WeightCrossover(0.5, "wc"),
             new NodeCrossover(0.5, "nc"),
-            new MutateNodes(10, 0.2, 0.05, "mn")
-//            new Hillclimb(0.4));
-        );
+            new WeightCrossover(0.5, "wc"),
+            new WeightMutation(0.2, "wm"),
+            new MutateNodes(10, 0.2, "mn"));
 
-        GaTrainerCacheInput<BasicNetwork, MLMethodGenome, MLMethodGenome> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
+        GaTrainerCacheInput<IgniteNetwork, MLMethodGenome, MLMethodGenome> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
             mnist.getFst().length,
             60,
@@ -139,7 +135,7 @@ public class GenTest  extends GridCommonAbstractTest {
             3,
             new AddLeaders(0.2),//.andThen(new LearningRateAdjuster()),
             0.02
-        );
+            );
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);
 

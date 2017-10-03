@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.Random;
 
 public class MnistUtils {
+    private static final int REDUCE_RATIO = 1;
+
     public static class Pair<F, S> {
         F fst;
         S snd;
@@ -52,7 +54,7 @@ public class MnistUtils {
 
         int numOfPixels = imgHeight * imgWidth;
 
-//        numOfImages = 60_000;
+        //numOfImages = 10_000;
 
         System.out.println("Magic: " + magic);
         System.out.println("Num of images: " + numOfImages);
@@ -63,9 +65,8 @@ public class MnistUtils {
         for (int imgNum = 0; imgNum < numOfImages; imgNum++) {
             double[] vec = new double[numOfPixels];
 
-            if (imgNum % 1000 == 0) {
+            if (imgNum % 1000 == 0)
                 System.out.println("Read " + imgNum + " images");
-            }
 
             for (int p = 0; p < numOfPixels; p++) {
                 int c = 128 - isImages.read();

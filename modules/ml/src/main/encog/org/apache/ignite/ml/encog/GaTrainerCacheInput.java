@@ -22,13 +22,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.metaoptimizers.Metaoptimizer;
+import org.apache.ignite.ml.encog.util.Util;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.encog.ml.CalculateScore;
@@ -39,7 +39,7 @@ import org.encog.ml.data.MLDataSet;
 import org.encog.ml.data.basic.BasicMLDataSet;
 
 public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends Serializable> implements GATrainerInput<T, S, U> {
-    private final IgniteBiFunction<TrainingContext, Ignite, CalculateScore> scoreCalculatorSupplier;
+    private final IgniteBiFunction<GATrainerInput, Ignite, CalculateScore> scoreCalculatorSupplier;
     private final int speciesCount;
     private IgniteSupplier<T> mf;
     private String cacheName;
@@ -56,7 +56,7 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
         int populationSize,
         List<IgniteEvolutionaryOperator> evolutionaryOperators,
         int iterationsPerLocalTick,
-        IgniteBiFunction<TrainingContext, Ignite, CalculateScore> scoreCalculator,
+        IgniteBiFunction<GATrainerInput, Ignite, CalculateScore> scoreCalculator,
         int speciesCount,
         Metaoptimizer<S, U> metaoptimizer,
         double batchPercentage) {
@@ -118,8 +118,8 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
         return iterationsPerLocalTick;
     }
 
-    @Override public CalculateScore scoreCalculator(TrainingContext ctx, Ignite ignite) {
-        return scoreCalculatorSupplier.apply(ctx, ignite);
+    @Override public CalculateScore scoreCalculator(Ignite ignite) {
+        return scoreCalculatorSupplier.apply(this, ignite);
     }
 
     @Override public int subPopulationsCount() {

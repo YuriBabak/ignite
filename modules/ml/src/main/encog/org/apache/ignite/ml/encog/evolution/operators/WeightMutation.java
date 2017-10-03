@@ -26,9 +26,12 @@ import org.encog.neural.networks.BasicNetwork;
  * TODO: add description.
  * TODO: use distribution from ctx.
  */
-public class WeightMutation extends IgniteEvolutionaryOperator {
-    public WeightMutation(double prob, String operatorId){
+public class WeightMutation extends IgniteEvolutionaryOperator implements HasLearningRate {
+    private double learningRate;
+
+    public WeightMutation(double prob, double learningRate, String operatorId){
         super(prob, operatorId);
+        this.learningRate = learningRate;
     }
 
     @Override public int offspringProduced() {
@@ -50,7 +53,7 @@ public class WeightMutation extends IgniteEvolutionaryOperator {
             for (int j = 0; j < parent.getLayerNeuronCount(i); j++) {
                 for (int k = 0; k < parent.getLayerNeuronCount(i + 1); k++){
                     double parentWeight = parent.getWeight(i, j, k);
-                    double shift = (rnd.nextDouble() - 0.5) * 0.1;
+                    double shift = (rnd.nextDouble() - 0.5) * learningRate;
 
                     child.setWeight(i, j, k, parentWeight + shift);
                 }
@@ -58,5 +61,13 @@ public class WeightMutation extends IgniteEvolutionaryOperator {
         }
 
         offspring[offspringIndex] = new MLMethodGenome(child);
+    }
+
+    @Override public void setLearningRate(double rate) {
+        learningRate = rate;
+    }
+
+    @Override public double learningRate() {
+        return learningRate;
     }
 }

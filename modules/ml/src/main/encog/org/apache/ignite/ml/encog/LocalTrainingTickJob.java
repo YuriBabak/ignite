@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.encog;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -28,22 +29,22 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
-import org.apache.ignite.ml.encog.caches.TrainingContext;
-import org.apache.ignite.ml.encog.caches.TrainingContextCache;
+import org.apache.ignite.ml.encog.caches.InputCache;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.encog.Encog;
 import org.encog.ml.CalculateScore;
+import org.encog.ml.MLMethod;
 import org.encog.ml.MethodFactory;
 import org.encog.ml.ea.population.Population;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 
 public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJob {
     private UUID trainingUuid;
-    private U data;
+    private Map<Integer, U> data;
     private static AtomicLong al = new AtomicLong(0);
     private int nodesCnt = 3;
 
-    public LocalTrainingTickJob(UUID trainingUuid, U data) {
+    public LocalTrainingTickJob(UUID trainingUuid, Map<Integer, U> data) {
         this.trainingUuid = trainingUuid;
         this.data = data;
     }
@@ -55,23 +56,23 @@ public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJ
     // 1. Load population
     // 2. Do several iterations of evolution
     // 3. Choose best and return it.
-    @Override public List<S> execute() throws IgniteException {
+    @Override public Map<Integer, S> execute() throws IgniteException {
         // Load every genome from cache
         Ignite ignite = Ignition.localIgnite();
 
         LocalPopulation<S, U> locPop = GenomesCache.localPopulation(trainingUuid, ignite);
         Map<Integer, Population> map = locPop.get();
-        List<S> res = new LinkedList<>();
+        Map<Integer, S> res = new HashMap<>();
 
         map.entrySet().forEach(entry -> {
             Population population = entry.getValue();
             int subPopulationNum = entry.getKey();
 
-            TrainingContext<S, U> ctx = TrainingContextCache.getOrCreate(ignite).get(trainingUuid);
-            MLMethodGeneticAlgorithm training = ctx.input().metaoptimizer().statsHandler(initTraining(population, ignite), Cloner.deepCopy(data));
+            GATrainerInput<? extends MLMethod, S, U> input = InputCache.getOrCreate(ignite).get(trainingUuid);
+            MLMethodGeneticAlgorithm training = input.metaoptimizer().statsHandler(initTraining(population, ignite), Cloner.deepCopy(data.get(subPopulationNum)));
 
             int i = 0;
-            while (i < ctx.input().iterationsPerLocalTick()) {
+            while (i < input.iterationsPerLocalTick()) {
                 training.iteration();
                 i++;
             }
@@ -82,7 +83,8 @@ public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJ
 
             training.finishTraining();
 
-            res.add(ctx.input().metaoptimizer().extractStats(training.getGenetic().getPopulation(), ctx));
+            // TODO: pass real context.
+            res.put(subPopulationNum, input.metaoptimizer().extractStats(training.getGenetic().getPopulation(), data.get(subPopulationNum), null));
 
             int oldSize = GenomesCache.getOrCreate(ignite).size();
 
@@ -100,10 +102,10 @@ public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJ
     }
 
     private MLMethodGeneticAlgorithm initTraining(Population pop, Ignite ignite) {
-        TrainingContext<S, U> ctx = TrainingContextCache.getOrCreate(ignite).get(trainingUuid);
-        MethodFactory mlMtdFactory = () -> ctx.input().methodFactory().get();
+        GATrainerInput<? extends MLMethod, S, U> ctx = InputCache.getOrCreate(ignite).get(trainingUuid);
+        MethodFactory mlMtdFactory = () -> ctx.methodFactory().get();
 
-        CalculateScore score = ctx.input().scoreCalculator(ctx, ignite);
+        CalculateScore score = ctx.scoreCalculator(ignite);
 
         MLMethodGeneticAlgorithm training = new MLMethodGeneticAlgorithm(mlMtdFactory, score, pop.getSpecies().get(0).getMembers().size());
 
@@ -112,10 +114,10 @@ public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJ
         // TODO: Remove
         training.getGenetic().getOperators().clear();
 
-        List<IgniteEvolutionaryOperator> evoOps = ctx.input().evolutionaryOperators();
+        List<IgniteEvolutionaryOperator> evoOps = ctx.evolutionaryOperators();
         evoOps.forEach(operator -> {
             operator.setIgnite(ignite);
-            operator.setContext(ctx);
+            operator.setInput(ctx);
             training.getGenetic().addOperation(operator.probability(), operator);
         });
 

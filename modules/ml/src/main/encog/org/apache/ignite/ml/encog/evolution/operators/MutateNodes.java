@@ -19,20 +19,19 @@ package org.apache.ignite.ml.encog.evolution.operators;
 
 import java.util.Random;
 import org.apache.ignite.ml.encog.NeuralNetworkUtils;
-import org.apache.ignite.ml.encog.Util;
-import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
-import org.encog.ml.MethodFactory;
+import org.apache.ignite.ml.encog.util.Util;
 import org.encog.ml.ea.genome.Genome;
-import org.encog.ml.ea.opp.EvolutionaryOperator;
 import org.encog.ml.ea.train.EvolutionaryAlgorithm;
 import org.encog.ml.genetic.MLMethodGenome;
 import org.encog.neural.networks.BasicNetwork;
 
-public class MutateNodes extends IgniteEvolutionaryOperator {
+public class MutateNodes extends IgniteEvolutionaryOperator implements HasLearningRate {
     private int nodesToMutateCnt;
+    private double learningRate;
 
-    public MutateNodes(int nodesToMutateCnt, double prob, String operatorId) {
+    public MutateNodes(int nodesToMutateCnt, double prob, double learningRate, String operatorId) {
         super(prob, operatorId);
+        this.learningRate = learningRate;
         this.nodesToMutateCnt = nodesToMutateCnt;
     }
 
@@ -62,14 +61,14 @@ public class MutateNodes extends IgniteEvolutionaryOperator {
             // Mutate inputs
             for (int i = 0; i < off.getLayerNeuronCount(layer - 1); i++) {
                 double curWeight = off.getWeight(layer - 1, i, neuron);
-                double v = (rnd.nextDouble() - 0.5) * 0.1;
+                double v = (rnd.nextDouble() - 0.5) * learningRate;
                 off.setWeight(layer - 1, i, neuron, curWeight + v);
             }
 
             // Mutate outputs
             for (int i = 0; i < off.getLayerNeuronCount(layer + 1); i++) {
                 double curWeight = off.getWeight(layer, neuron, i);
-                double v = (rnd.nextDouble() - 0.5) * 0.1;
+                double v = (rnd.nextDouble() - 0.5) * learningRate;
                 off.setWeight(layer, neuron, i, curWeight + v);
             }
         }
@@ -77,6 +76,11 @@ public class MutateNodes extends IgniteEvolutionaryOperator {
         offspring[offspringIdx] = new MLMethodGenome(off);
     }
 
-    // Reservoir sampling to choose nodesToMutateCnt distinct nodes from n nodes.
+    @Override public void setLearningRate(double rate) {
+        learningRate = rate;
+    }
 
+    @Override public double learningRate() {
+        return learningRate;
+    }
 }

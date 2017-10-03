@@ -25,6 +25,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
@@ -33,6 +34,7 @@ import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
+import org.apache.ignite.ml.encog.metaoptimizers.LearningRateAdjuster;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
@@ -120,10 +122,10 @@ public class GenTest  extends GridCommonAbstractTest {
         };
 
         List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
-            new WeightMutation(0.4, "wm"),
+            new WeightMutation(0.4, 0.05,"wm"),
 //            new WeightCrossover(0.5, "wc"),
             new NodeCrossover(0.5, "nc"),
-            new MutateNodes(10, 0.2, "mn")
+            new MutateNodes(10, 0.2, 0.05, "mn")
 //            new Hillclimb(0.4));
         );
 
@@ -132,12 +134,12 @@ public class GenTest  extends GridCommonAbstractTest {
             mnist.getFst().length,
             60,
             evoOps,
-            50,
-            (ctx, ignite) -> new TrainingSetScore(ctx.input().mlDataSet(ignite)),
+            30,
+            (in, ignite) -> new TrainingSetScore(in.mlDataSet(ignite)),
             3,
-            new AddLeaders(0.2),
+            new AddLeaders(0.2),//.andThen(new LearningRateAdjuster()),
             0.02
-            );
+        );
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);
 

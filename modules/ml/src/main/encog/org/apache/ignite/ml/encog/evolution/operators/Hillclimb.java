@@ -19,7 +19,7 @@ package org.apache.ignite.ml.encog.evolution.operators;
 
 import java.util.Random;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.ml.encog.caches.TrainingContext;
+import org.apache.ignite.ml.encog.GATrainerInput;
 import org.encog.ml.ea.genome.Genome;
 import org.encog.ml.genetic.MLMethodGenome;
 import org.encog.neural.flat.FlatNetwork;
@@ -42,10 +42,10 @@ public class Hillclimb extends IgniteEvolutionaryOperator {
     @Override public void performOperation(Random rnd, Genome[] parents, int parentIndex, Genome[] offspring,
         int offspringIndex) {
         Ignite ignite = ignite();
-        TrainingContext ctx = context();
+        GATrainerInput input = input();
 
         ContainsFlat parent = (ContainsFlat)((MLMethodGenome)parents[parentIndex]).getPhenotype();
-        double[] gradient = new GradientCalculator(parent, ctx.input().mlDataSet(ignite)).gradient();
+        double[] gradient = new GradientCalculator(parent, input.mlDataSet(ignite)).gradient();
         FlatNetwork off = parent.getFlat().clone();
 
         double[] weights = off.getWeights();
@@ -53,7 +53,7 @@ public class Hillclimb extends IgniteEvolutionaryOperator {
         for (int i = 0; i < weights.length; i++)
             weights[i] += gradient[i];
 
-        BasicNetwork res = (BasicNetwork)ctx.input().methodFactory().get();
+        BasicNetwork res = (BasicNetwork)input.methodFactory().get();
         res.decodeFromArray(weights);
 
         offspring[offspringIndex] = new MLMethodGenome(res);

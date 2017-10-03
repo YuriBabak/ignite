@@ -24,12 +24,13 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.ml.encog.GATrainerInput;
 
-public class TrainingContextCache {
+public class InputCache {
     public static final String NAME = "GA_TRAINING_CACHE";
 
-    public static IgniteCache<UUID, TrainingContext> getOrCreate(Ignite ignite) {
-        CacheConfiguration<UUID, TrainingContext> cfg = new CacheConfiguration<>();
+    public static IgniteCache<UUID, GATrainerInput> getOrCreate(Ignite ignite) {
+        CacheConfiguration<UUID, GATrainerInput> cfg = new CacheConfiguration<>();
 
         // Write to primary.
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);

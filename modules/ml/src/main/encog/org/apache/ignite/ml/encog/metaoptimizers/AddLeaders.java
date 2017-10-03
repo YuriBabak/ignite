@@ -17,9 +17,10 @@
 
 package org.apache.ignite.ml.encog.metaoptimizers;
 
-import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.encog.ml.ea.genome.BasicGenome;
@@ -35,17 +36,22 @@ public class AddLeaders implements Metaoptimizer<MLMethodGenome, MLMethodGenome>
         this.additionRatio = additionRatio;
     }
 
-    @Override public MLMethodGenome extractStats(Population population, TrainingContext ctx) {
+    @Override public MLMethodGenome extractStats(Population population, MLMethodGenome prevLeader, TrainingContext ctx) {
         MLMethodGenome locallyBest = (MLMethodGenome)population.getBestGenome();
         GenomesCache.processForSaving(locallyBest);
         System.out.println("Locally best score is " + locallyBest.getScore());
         return locallyBest;
     }
 
-    @Override public MLMethodGenome statsAggregator(Collection<List<MLMethodGenome>> stats) {
-        MLMethodGenome lead = stats.stream().flatMap(Collection::stream).min(Comparator.comparingDouble(BasicGenome::getScore)).get();
+    @Override public Map<Integer, MLMethodGenome> statsAggregator(Map<Integer, MLMethodGenome> stats) {
+        MLMethodGenome lead = stats.values().stream().min(Comparator.comparingDouble(BasicGenome::getScore)).get();
         System.out.println("Iteration  complete, globally best score is " + lead.getScore());
-        return lead;
+        Map<Integer, MLMethodGenome> res = new HashMap<>();
+
+        for (int i = 0; i < stats.size(); i++)
+            res.put(i, lead);
+
+        return res;
     }
 
     @Override
@@ -64,9 +70,5 @@ public class AddLeaders implements Metaoptimizer<MLMethodGenome, MLMethodGenome>
         population.setPopulationSize(cntToAdd + size);
 
         return train;
-    }
-
-    @Override public MLMethodGenome finalResult(MLMethodGenome data) {
-        return data;
     }
 }

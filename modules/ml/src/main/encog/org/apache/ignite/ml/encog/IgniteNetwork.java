@@ -19,6 +19,8 @@ package org.apache.ignite.ml.encog;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
+import java.util.stream.Collectors;
 import org.encog.neural.networks.BasicNetwork;
 
 /**
@@ -57,5 +59,69 @@ public class IgniteNetwork extends BasicNetwork {
         double lockVal = learningMask.getOrDefault(new LockKey(fromLayer, fromNeuron, toNeuron), 1d);
 
         super.setWeight(fromLayer, fromNeuron, toNeuron, val * lockVal);
+    }
+
+    /** {@inheritDoc} */
+    @Override public double getWeight(int fromLayer, int fromNeuron, int toNeuron) {
+        double lockVal = learningMask.getOrDefault(new LockKey(fromLayer, fromNeuron, toNeuron), 1d);
+
+        return Double.compare(lockVal, 0d) == 0 ? 0d : super.getWeight(fromLayer, fromNeuron, toNeuron);
+    }
+
+    public void buildMask(){
+        for (int i = 0; i < getLayerCount() - 1; i++) {
+            for (int j = 0; j < getLayerNeuronCount(i); j++) {
+                for (int k = 0; k < getLayerNeuronCount(j); k++)
+                    learningMask.put(new LockKey(i,j,k), 1d);
+            }
+        }
+    }
+
+    public void dropNeuron(int layer, int neuronNumberInLayer){
+        validateLayer(layer);
+
+        for (int i = 0; i < getLayerNeuronCount(layer - 1); i++)
+            learningMask.put(new LockKey(layer, i, neuronNumberInLayer), 0.0d);
+
+        for (int i = 0; i < getLayerNeuronCount(layer + 1); i++)
+            learningMask.put(new LockKey(layer, neuronNumberInLayer, i), 0.0d);
+    }
+
+    public void dropNRandomNeurons(int n){
+        Random r = new Random();
+
+        for (int i = 0; i < n; i++) {
+            int layer = r.nextInt(getLayerCount() - 2) + 1;
+
+            int neuron = r.nextInt(getLayerNeuronCount(layer));
+
+            dropNeuron(layer, neuron);
+        }
+    }
+
+    public void lockNeuron(int layer, int neuronNumberInLayer, double val){
+        validateLayer(layer);
+
+        for (int i = 0; i < getLayerNeuronCount(layer - 1); i++)
+            learningMask.put(new LockKey(layer, i, neuronNumberInLayer), val);
+
+        for (int i = 0; i < getLayerNeuronCount(layer + 1); i++)
+            learningMask.put(new LockKey(layer, neuronNumberInLayer, i), val);
+    }
+
+    public void randomizeLocks(){
+        Random random = new Random();
+        learningMask = learningMask.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.setValue(random.nextDouble())));
+    }
+
+    /**
+     * We can`t drop input or output neuron
+     *
+     * @param layer Layer.
+     */
+    private void validateLayer(int layer){
+        assert layer > 0;
+        assert layer < getLayerCount() - 1;
     }
 }

@@ -25,6 +25,9 @@ import org.apache.ignite.ml.encog.util.TrainingUtils;
 import org.encog.ml.ea.population.Population;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 
+/**
+ * Implementation of {@link Metaoptimizer} for adjustable learning(mutation) rate.
+ */
 public class LearningRateAdjuster implements Metaoptimizer<LearningRateAdjuster.LearningRateStats, LearningRateAdjuster.LearningRateStats> {
     public static class LearningRateStats implements Serializable {
         Double score;

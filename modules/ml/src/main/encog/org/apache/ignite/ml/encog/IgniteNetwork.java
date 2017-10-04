@@ -24,7 +24,10 @@ import java.util.stream.Collectors;
 import org.encog.neural.networks.BasicNetwork;
 
 /**
- * TODO: add description.
+ * Extension of {@link BasicNetwork} with emulation of topology changes.
+ *
+ * For this emulation we use {@link Map} of {@link LockKey} and double.
+ * If value is 0 - it`s emulate absence of connection between neurons.
  */
 public class IgniteNetwork extends BasicNetwork {
 

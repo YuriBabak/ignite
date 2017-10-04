@@ -26,11 +26,8 @@ import java.util.Map;
 import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
-import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.caches.InputCache;
-import org.encog.ml.MLEncodable;
 import org.encog.ml.MLMethod;
 import org.encog.ml.MethodFactory;
 import org.encog.ml.ea.genome.Genome;
@@ -40,6 +37,12 @@ import org.encog.ml.ea.species.Species;
 import org.encog.ml.genetic.MLMethodGenome;
 import org.encog.ml.genetic.MLMethodGenomeFactory;
 
+/**
+ * Local population, expected usage - one per cluster node.
+ *
+ * @param <S>
+ * @param <U>
+ */
 public class LocalPopulation<S, U extends Serializable> {
     private UUID trainingUuid;
     private Ignite ignite;

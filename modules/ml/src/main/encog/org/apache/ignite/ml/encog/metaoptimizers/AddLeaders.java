@@ -29,6 +29,9 @@ import org.encog.ml.ea.population.Population;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 import org.encog.ml.genetic.MLMethodGenome;
 
+/**
+ * Implementation of {@link Metaoptimizer} for sharing leaders between local populations.
+ */
 public class AddLeaders implements Metaoptimizer<MLMethodGenome, MLMethodGenome> {
     private double additionRatio;
 

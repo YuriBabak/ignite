@@ -19,7 +19,6 @@ package org.apache.ignite.ml.encog;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -38,6 +37,9 @@ import org.encog.ml.MethodFactory;
 import org.encog.ml.ea.population.Population;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 
+/**
+ * Local step of {@link GroupTrainerTask}.
+ */
 public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJob {
     private UUID trainingUuid;
     private Map<Integer, U> data;
@@ -101,6 +103,10 @@ public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJ
         return res;
     }
 
+    /**
+     * @param pop Pop.
+     * @param ignite Ignite.
+     */
     private MLMethodGeneticAlgorithm initTraining(Population pop, Ignite ignite) {
         GATrainerInput<? extends MLMethod, S, U> ctx = InputCache.getOrCreate(ignite).get(trainingUuid);
         MethodFactory mlMtdFactory = () -> ctx.methodFactory().get();

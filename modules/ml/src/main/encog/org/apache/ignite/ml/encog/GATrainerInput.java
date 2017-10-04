@@ -20,7 +20,6 @@ package org.apache.ignite.ml.encog;
 import java.io.Serializable;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.metaoptimizers.Metaoptimizer;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
@@ -29,6 +28,13 @@ import org.encog.ml.MLEncodable;
 import org.encog.ml.MLMethod;
 import org.encog.ml.data.MLDataSet;
 
+/**
+ * Input for {@link GATrainer}.
+ *
+ * @param <T>
+ * @param <S>
+ * @param <U>
+ */
 public interface GATrainerInput<T extends MLMethod & MLEncodable, S, U extends Serializable> {
     /**
      * Returns dataset which is used as a training set on each of trainer nodes.
@@ -36,21 +42,47 @@ public interface GATrainerInput<T extends MLMethod & MLEncodable, S, U extends S
      */
     MLDataSet mlDataSet(Ignite ignite);
 
+    /**
+     * Get nets factory.
+     */
     IgniteSupplier<T> methodFactory();
 
+    /**
+     * Get data set size.
+     */
     int datasetSize();
 
+    /**
+     * Get size of subpopulation.
+     */
     int subPopulationSize();
 
+    /**
+     * Get list of evolution operators.
+     */
     List<IgniteEvolutionaryOperator> evolutionaryOperators();
 
+    /**
+     * Get number of local iterations between {@link Metaoptimizer} syncs.
+     */
     default int iterationsPerLocalTick() {
         return 1;
     }
 
+    /**
+     * Get score calculator.
+     *
+     * @param ignite Ignite.
+     */
     CalculateScore scoreCalculator(Ignite ignite);
 
+    /**
+     * Get subpopulation count.
+     */
     int subPopulationsCount();
 
+    /**
+     * Get metaoptimizer.
+     */
     Metaoptimizer<S, U> metaoptimizer();
 }

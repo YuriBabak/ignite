@@ -28,10 +28,8 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
-import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
 import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightCrossover;
-import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
@@ -42,7 +40,6 @@ import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.basic.BasicMLData;
 import org.encog.ml.data.basic.BasicMLDataPair;
 import org.encog.ml.genetic.MLMethodGenome;
-import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.TrainingSetScore;
 import org.junit.Test;
@@ -121,9 +118,10 @@ public class GenTest  extends GridCommonAbstractTest {
 
         List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
             new NodeCrossover(0.5, "nc"),
-            new WeightCrossover(0.5, "wc"),
-            new WeightMutation(0.2, "wm"),
-            new MutateNodes(10, 0.2, "mn"));
+            new WeightCrossover(0.5, "wc")
+//            new WeightMutation(0.2, "wm"),
+//            new MutateNodes(10, 0.2, "mn")
+            );
 
         GaTrainerCacheInput<IgniteNetwork, MLMethodGenome, MLMethodGenome> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,

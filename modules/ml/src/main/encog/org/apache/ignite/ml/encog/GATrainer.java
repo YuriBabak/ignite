@@ -23,7 +23,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -39,7 +38,6 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
-import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.caches.InputCache;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
@@ -58,7 +56,7 @@ import org.encog.neural.networks.training.TrainingSetScore;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * TODO: add description.
+ * Implementation of group trainer using genetic algorithm.
  */
 public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData, double[], GATrainerInput<? extends MLMethod, S, U>, EncogMethodWrapper> {
     private static final int MAX_ITERATION = 60;

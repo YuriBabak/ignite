@@ -18,12 +18,10 @@
 package org.apache.ignite.ml.encog;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -33,9 +31,8 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * TODO: add description.
- *
- * Train and choose leader.
+ * Map - perform n steps of local evolution.
+ * Reduce - collect local leaders.
  */
 public class GroupTrainerTask<S, U extends Serializable> extends ComputeTaskAdapter<UUID, Map<Integer, U>> {
     private IgniteFunction<Map<Integer, S>, Map<Integer, U>> statsAggregator;

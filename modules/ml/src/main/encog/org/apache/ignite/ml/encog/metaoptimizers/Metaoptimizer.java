@@ -19,18 +19,12 @@ package org.apache.ignite.ml.encog.metaoptimizers;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.encog.util.StreamUtils;
 import org.apache.ignite.ml.encog.caches.TrainingContext;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.encog.ml.ea.population.Population;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
-import org.encog.ml.genetic.MLMethodGenome;
 
 public interface Metaoptimizer<S, U extends Serializable> extends Serializable {
     S extractStats(Population population, U data, TrainingContext ctx);

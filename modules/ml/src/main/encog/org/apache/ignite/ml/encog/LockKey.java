@@ -18,7 +18,9 @@
 package org.apache.ignite.ml.encog;
 
 /**
- * TODO: add description.
+ * Key(layer, output neuron, input neuron) for locking mask.
+ *
+ * Used for simulate topology changes.
  */
 public class LockKey {
     int layer;

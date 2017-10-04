@@ -21,13 +21,7 @@ import java.io.Serializable;
 import java.util.Map;
 import org.apache.ignite.ml.encog.GATrainerInput;
 import org.apache.ignite.ml.encog.SubPopulationStatistics;
-import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.encog.ml.MLEncodable;
 import org.encog.ml.MLMethod;
-import org.encog.ml.MethodFactory;
-import org.encog.ml.data.MLDataSet;
-import org.encog.ml.ea.genome.GenomeFactory;
-import org.encog.ml.factory.MLMethodFactory;
 
 // TODO: maybe we should store in cache only input and all other, non-constant data should be send each time.
 public class TrainingContext<S, U extends Serializable> implements Serializable {

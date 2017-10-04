@@ -30,7 +30,6 @@ import org.encog.neural.networks.BasicNetwork;
  * If value is 0 - it`s emulate absence of connection between neurons.
  */
 public class IgniteNetwork extends BasicNetwork {
-
     private Map<LockKey, Double> learningMask = new HashMap<>();
 
     /**
@@ -59,14 +58,15 @@ public class IgniteNetwork extends BasicNetwork {
 
     /** {@inheritDoc} */
     @Override public void setWeight(int fromLayer, int fromNeuron, int toNeuron, double val) {
-        double lockVal = learningMask.getOrDefault(new LockKey(fromLayer, fromNeuron, toNeuron), 1d);
+        // TODO: actually lock weights can be inconsistent, think about it.
+        double lockVal = learningMask.getOrDefault(new LockKey(fromLayer, fromNeuron), 1d);
 
         super.setWeight(fromLayer, fromNeuron, toNeuron, val * lockVal);
     }
 
     /** {@inheritDoc} */
     @Override public double getWeight(int fromLayer, int fromNeuron, int toNeuron) {
-        double lockVal = learningMask.getOrDefault(new LockKey(fromLayer, fromNeuron, toNeuron), 1d);
+        double lockVal = learningMask.getOrDefault(new LockKey(fromLayer, fromNeuron), 1d);
 
         return Double.compare(lockVal, 0d) == 0 ? 0d : super.getWeight(fromLayer, fromNeuron, toNeuron);
     }
@@ -75,7 +75,7 @@ public class IgniteNetwork extends BasicNetwork {
         for (int i = 0; i < getLayerCount() - 1; i++) {
             for (int j = 0; j < getLayerNeuronCount(i); j++) {
                 for (int k = 0; k < getLayerNeuronCount(j); k++)
-                    learningMask.put(new LockKey(i,j,k), 1d);
+                    learningMask.put(new LockKey(i, j), 1d);
             }
         }
     }
@@ -83,16 +83,28 @@ public class IgniteNetwork extends BasicNetwork {
     public void dropNeuron(int layer, int neuronNumberInLayer){
         validateLayer(layer);
 
-        for (int i = 0; i < getLayerNeuronCount(layer - 1); i++)
-            learningMask.put(new LockKey(layer, i, neuronNumberInLayer), 0.0d);
+        learningMask.put(new LockKey(layer, neuronNumberInLayer), 0.0d);
 
-        for (int i = 0; i < getLayerNeuronCount(layer + 1); i++)
-            learningMask.put(new LockKey(layer, neuronNumberInLayer, i), 0.0d);
+        removeWeights(layer, neuronNumberInLayer);
     }
 
-    public void dropNRandomNeurons(int n){
-        Random r = new Random();
+    private void removeWeights(int layer, int neuronNumberInLayer) {
+        // remove inputs
+        if (layer > 0) {
+            int pl = layer - 1;
+            for (int pn = 0; pn < getLayerNeuronCount(pl); pn++)
+                setWeight(pl, pn, neuronNumberInLayer, 0.0);
+        }
 
+        // remove outputs
+        if (layer < getLayerCount() - 1) {
+            int nl = layer + 1;
+            for (int nn = 0; nn < getLayerNeuronCount(nl); nn++)
+                setWeight(layer, neuronNumberInLayer, nn, 0.0);
+        }
+    }
+
+    public void dropNRandomNeurons(int n, Random r){
         for (int i = 0; i < n; i++) {
             int layer = r.nextInt(getLayerCount() - 2) + 1;
 
@@ -102,20 +114,27 @@ public class IgniteNetwork extends BasicNetwork {
         }
     }
 
+    public void dropNRandomNeurons(int n) {
+        dropNRandomNeurons(n, new Random());
+    }
+
     public void lockNeuron(int layer, int neuronNumberInLayer, double val){
         validateLayer(layer);
 
-        for (int i = 0; i < getLayerNeuronCount(layer - 1); i++)
-            learningMask.put(new LockKey(layer, i, neuronNumberInLayer), val);
-
-        for (int i = 0; i < getLayerNeuronCount(layer + 1); i++)
-            learningMask.put(new LockKey(layer, neuronNumberInLayer, i), val);
+        if (val == 0.0)
+            dropNeuron(layer, neuronNumberInLayer);
+        else
+            learningMask.put(new LockKey(layer, neuronNumberInLayer), val);
     }
 
     public void randomizeLocks(){
         Random random = new Random();
         learningMask = learningMask.entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.setValue(random.nextDouble())));
+    }
+
+    public void reset() {
+        learningMask.clear();
     }
 
     /**

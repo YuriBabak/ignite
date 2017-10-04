@@ -27,6 +27,8 @@ import org.encog.ml.ea.population.Population;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 
 public interface Metaoptimizer<S, U extends Serializable> extends Serializable {
+    U initialData(int populationNum);
+
     S extractStats(Population population, U data, TrainingContext ctx);
 
     // At i-th position of the list contained data which should be sent to i-th iteration.
@@ -44,6 +46,10 @@ public interface Metaoptimizer<S, U extends Serializable> extends Serializable {
     default <S1, U1 extends Serializable> Metaoptimizer<IgniteBiTuple<S, S1>, IgniteBiTuple<U, U1>> andThen(Metaoptimizer<S1, U1> op) {
         Metaoptimizer<S, U> outerThis = this;
         return new Metaoptimizer<IgniteBiTuple<S, S1>, IgniteBiTuple<U, U1>>() {
+            @Override public IgniteBiTuple<U, U1> initialData(int subPopulation) {
+                return new IgniteBiTuple<>(outerThis.initialData(subPopulation), op.initialData(subPopulation));
+            }
+
             @Override public IgniteBiTuple<S, S1> extractStats(Population population, IgniteBiTuple<U, U1> data, TrainingContext ctx) {
                 return new IgniteBiTuple<>(outerThis.extractStats(population, Optional.ofNullable(data).map(IgniteBiTuple::get1).orElse(null), ctx), op.extractStats(population, Optional.ofNullable(data).map(IgniteBiTuple::get2).orElse(null), ctx));
             }

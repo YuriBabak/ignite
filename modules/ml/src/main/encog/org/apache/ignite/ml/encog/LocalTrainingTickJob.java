@@ -71,7 +71,7 @@ public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJ
             int subPopulationNum = entry.getKey();
 
             GATrainerInput<? extends MLMethod, S, U> input = InputCache.getOrCreate(ignite).get(trainingUuid);
-            MLMethodGeneticAlgorithm training = input.metaoptimizer().statsHandler(initTraining(population, ignite), Cloner.deepCopy(data.get(subPopulationNum)));
+            MLMethodGeneticAlgorithm training = input.metaoptimizer().statsHandler(initTraining(population, subPopulationNum, ignite), Cloner.deepCopy(data.get(subPopulationNum)));
 
             int i = 0;
             while (i < input.iterationsPerLocalTick()) {
@@ -107,9 +107,9 @@ public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJ
      * @param pop Pop.
      * @param ignite Ignite.
      */
-    private MLMethodGeneticAlgorithm initTraining(Population pop, Ignite ignite) {
+    private MLMethodGeneticAlgorithm initTraining(Population pop, int subPopulation, Ignite ignite) {
         GATrainerInput<? extends MLMethod, S, U> ctx = InputCache.getOrCreate(ignite).get(trainingUuid);
-        MethodFactory mlMtdFactory = () -> ctx.methodFactory().get();
+        MethodFactory mlMtdFactory = () -> ctx.methodFactory(subPopulation).get();
 
         CalculateScore score = ctx.scoreCalculator(ignite);
 

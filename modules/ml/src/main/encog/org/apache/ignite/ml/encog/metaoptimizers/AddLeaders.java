@@ -39,6 +39,10 @@ public class AddLeaders implements Metaoptimizer<MLMethodGenome, MLMethodGenome>
         this.additionRatio = additionRatio;
     }
 
+    @Override public MLMethodGenome initialData(int subPopulation) {
+        return null;
+    }
+
     @Override public MLMethodGenome extractStats(Population population, MLMethodGenome prevLeader, TrainingContext ctx) {
         MLMethodGenome locallyBest = (MLMethodGenome)population.getBestGenome();
         GenomesCache.processForSaving(locallyBest);

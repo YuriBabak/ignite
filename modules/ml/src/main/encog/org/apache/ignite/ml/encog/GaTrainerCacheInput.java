@@ -30,6 +30,7 @@ import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator
 import org.apache.ignite.ml.encog.metaoptimizers.Metaoptimizer;
 import org.apache.ignite.ml.encog.util.Util;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.encog.ml.CalculateScore;
 import org.encog.ml.MLEncodable;
@@ -41,7 +42,7 @@ import org.encog.ml.data.basic.BasicMLDataSet;
 public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends Serializable> implements GATrainerInput<T, S, U> {
     private final IgniteBiFunction<GATrainerInput, Ignite, CalculateScore> scoreCalculatorSupplier;
     private final int speciesCount;
-    private IgniteSupplier<T> mf;
+    private IgniteFunction<Integer, T> mf;
     private String cacheName;
     private int size;
     private int populationSize;
@@ -51,7 +52,7 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
     private double batchPercentage;
 
     public GaTrainerCacheInput(String cacheName,
-        IgniteSupplier<T> mtdFactory,
+        IgniteFunction<Integer, T> mtdFactory,
         int size,
         int populationSize,
         List<IgniteEvolutionaryOperator> evolutionaryOperators,
@@ -61,7 +62,7 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
         Metaoptimizer<S, U> metaoptimizer,
         double batchPercentage) {
         this.cacheName = cacheName;
-        mf = () -> mtdFactory.get();
+        mf = mtdFactory;
         this.size = size;
         this.populationSize = populationSize;
         this.evolutionaryOperators = evolutionaryOperators;
@@ -98,8 +99,8 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
         return new BasicMLDataSet(lst);
     }
 
-    @Override public IgniteSupplier<T> methodFactory() {
-        return mf;
+    @Override public IgniteSupplier<T> methodFactory(int i) {
+        return () -> mf.apply(i);
     }
 
     @Override public int datasetSize() {

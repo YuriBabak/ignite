@@ -49,6 +49,10 @@ public class LearningRateAdjuster implements Metaoptimizer<LearningRateAdjuster.
         }
     }
 
+    @Override public LearningRateStats initialData(int populationNum) {
+        return null;
+    }
+
     @Override public LearningRateStats extractStats(Population population, LearningRateStats prevStats, TrainingContext ctx) {
         double curScure = population.getBestGenome().getScore();
         if (prevStats == null)

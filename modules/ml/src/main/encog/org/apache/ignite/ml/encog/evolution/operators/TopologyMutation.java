@@ -59,7 +59,7 @@ public class TopologyMutation extends IgniteEvolutionaryOperator {
 
         double shift = rnd.nextDouble() * REDUCE_RATIO;
 
-        LockKey key = new LockKey(lockLayer, lockOut, lockIn);
+        LockKey key = new LockKey(lockLayer, lockIn);
 
         Double maskVal = mask.get(key);
 

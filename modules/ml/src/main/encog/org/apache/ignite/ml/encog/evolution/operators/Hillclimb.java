@@ -41,21 +41,21 @@ public class Hillclimb extends IgniteEvolutionaryOperator {
 
     @Override public void performOperation(Random rnd, Genome[] parents, int parentIndex, Genome[] offspring,
         int offspringIndex) {
-        Ignite ignite = ignite();
-        GATrainerInput input = input();
-
-        ContainsFlat parent = (ContainsFlat)((MLMethodGenome)parents[parentIndex]).getPhenotype();
-        double[] gradient = new GradientCalculator(parent, input.mlDataSet(ignite)).gradient();
-        FlatNetwork off = parent.getFlat().clone();
-
-        double[] weights = off.getWeights();
-
-        for (int i = 0; i < weights.length; i++)
-            weights[i] += gradient[i];
-
-        BasicNetwork res = (BasicNetwork)input.methodFactory().get();
-        res.decodeFromArray(weights);
-
-        offspring[offspringIndex] = new MLMethodGenome(res);
+//        Ignite ignite = ignite();
+//        GATrainerInput input = input();
+//
+//        ContainsFlat parent = (ContainsFlat)((MLMethodGenome)parents[parentIndex]).getPhenotype();
+//        double[] gradient = new GradientCalculator(parent, input.mlDataSet(ignite)).gradient();
+//        FlatNetwork off = parent.getFlat().clone();
+//
+//        double[] weights = off.getWeights();
+//
+//        for (int i = 0; i < weights.length; i++)
+//            weights[i] += gradient[i];
+//
+//        BasicNetwork res = (BasicNetwork)input.methodFactory().get();
+//        res.decodeFromArray(weights);
+//
+//        offspring[offspringIndex] = new MLMethodGenome(res);
     }
 }

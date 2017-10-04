@@ -19,7 +19,9 @@ package org.apache.ignite.ml.encog;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
@@ -35,7 +37,10 @@ import org.apache.ignite.ml.encog.evolution.operators.WeightCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
 import org.apache.ignite.ml.encog.metaoptimizers.LearningRateAdjuster;
+import org.apache.ignite.ml.encog.metaoptimizers.TopologyChanger;
+import org.apache.ignite.ml.encog.util.Util;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -110,10 +115,13 @@ public class GenTest  extends GridCommonAbstractTest {
         System.out.println("Done.");
 
         // create training data
-        IgniteSupplier<IgniteNetwork> fact = () -> {
+        int n = 50;
+        int k = 49;
+
+        IgniteFunction<Integer, IgniteNetwork> fact = i -> {
             IgniteNetwork res = new IgniteNetwork();
-            res.addLayer(new BasicLayer(null,true,28 * 28));
-            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),true,50));
+            res.addLayer(new BasicLayer(null,false,28 * 28));
+            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,n));
             res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSoftMax(),false,10));
             res.getStructure().finalizeStructure();
 
@@ -122,12 +130,22 @@ public class GenTest  extends GridCommonAbstractTest {
         };
 
         List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
-            new NodeCrossover(0.5, "nc"),
-            new WeightCrossover(0.5, "wc"),
-            new WeightMutation(0.2, 0.05, "wm"),
-            new MutateNodes(10, 0.05, 0.2, "mn"));
+            new NodeCrossover(0.2, "nc"),
+            new WeightCrossover(0.2, "wc"),
+//            new WeightMutation(0.2, 0.05, "wm"),
+            new MutateNodes(10, 0.2, 0.05, "mn"));
 
-        GaTrainerCacheInput<IgniteNetwork, IgniteBiTuple<MLMethodGenome, LearningRateAdjuster.LearningRateStats>, IgniteBiTuple<MLMethodGenome, LearningRateAdjuster.LearningRateStats>> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
+        IgniteFunction<Integer, TopologyChanger.Topology> topologySupplier = (IgniteFunction<Integer, TopologyChanger.Topology>)subPop -> {
+            Map<LockKey, Double> locks = new HashMap<>();
+
+            int[] toDrop = Util.selectKDistinct(n, Math.abs(new Random().nextInt()) % k);
+
+            for (int neuron : toDrop)
+                locks.put(new LockKey(1, neuron), 0.0);
+
+            return new TopologyChanger.Topology(locks);
+        };
+        GaTrainerCacheInput input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
             mnist.getFst().length,
             60,
@@ -135,7 +153,7 @@ public class GenTest  extends GridCommonAbstractTest {
             30,
             (in, ignite) -> new TrainingSetScore(in.mlDataSet(ignite)),
             3,
-            new AddLeaders(0.2).andThen(new LearningRateAdjuster()),
+            new TopologyChanger(topologySupplier).andThen(new AddLeaders(0.2))/*.andThen(new LearningRateAdjuster())*/,
             0.02
         );
 

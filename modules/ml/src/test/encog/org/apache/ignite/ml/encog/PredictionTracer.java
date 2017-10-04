@@ -23,12 +23,16 @@ import java.util.List;
 import java.util.Random;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
+import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
 import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightCrossover;
+import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
+import org.apache.ignite.ml.encog.metaoptimizers.LearningRateAdjuster;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.encog.ml.data.MLData;
@@ -56,10 +60,11 @@ public class PredictionTracer extends GenTest {
 
         List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
             new NodeCrossover(0.5, "nc"),
-            new WeightCrossover(0.5, "wc")
-            );
+            new WeightCrossover(0.5, "wc"),
+            new WeightMutation(0.2, 0.05, "wm"),
+            new MutateNodes(10, 0.05, 0.2, "mn"));
 
-        GaTrainerCacheInput<IgniteNetwork, MLMethodGenome, MLMethodGenome> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
+        GaTrainerCacheInput<IgniteNetwork, IgniteBiTuple<MLMethodGenome, LearningRateAdjuster.LearningRateStats>, IgniteBiTuple<MLMethodGenome, LearningRateAdjuster.LearningRateStats>> input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
             mnist.getFst().length,
             60,
@@ -67,9 +72,9 @@ public class PredictionTracer extends GenTest {
             30,
             (in, ignite) -> new TrainingSetScore(in.mlDataSet(ignite)),
             3,
-            new AddLeaders(0.2),
+            new AddLeaders(0.2).andThen(new LearningRateAdjuster()),
             0.02
-            );
+        );
 
         @SuppressWarnings("unchecked")
         EncogMethodWrapper mdl = new GATrainer(ignite).train(input);

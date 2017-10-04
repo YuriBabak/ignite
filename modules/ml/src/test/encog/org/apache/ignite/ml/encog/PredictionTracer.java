@@ -60,7 +60,6 @@ public class PredictionTracer extends GenTest {
     /** */
     private static final String delim = ",";
 
-
     /** */
     public void testPrediction() throws IOException {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());

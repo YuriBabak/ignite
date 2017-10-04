@@ -45,7 +45,7 @@ public interface GATrainerInput<T extends MLMethod & MLEncodable, S, U extends S
     /**
      * Get nets factory.
      */
-    IgniteSupplier<T> methodFactory();
+    IgniteSupplier<T> methodFactory(int i);
 
     /**
      * Get data set size.

@@ -126,13 +126,15 @@ public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData
         IgniteCache<UUID, GATrainerInput> cache = InputCache.getOrCreate(ignite);
         GATrainerInput<?, S, U> input = cache.get(trainingUUID);
         MLDataSet trainingSet = input.mlDataSet(ignite);
-        MethodFactory mtdFactory = () -> input.methodFactory().get();
+
         TrainingSetScore score = new TrainingSetScore(trainingSet);
         List<IgniteEvolutionaryOperator> evoOps = input.evolutionaryOperators();
 
         Map<Integer, S> res = new HashMap<>();
 
         for (int subPopulation = 0; subPopulation < input.subPopulationsCount(); subPopulation++) {
+            int sp = subPopulation;
+            MethodFactory mtdFactory = () -> input.methodFactory(sp).get();
             // Check if this specNum is mapped to the current node...
             GenomesCache.Key sampleKey = new GenomesCache.Key(trainingUUID, UUID.randomUUID(), subPopulation);
             if (GenomesCache.affinity(ignite).mapKeyToNode(sampleKey) != ignite.cluster().localNode())
@@ -156,7 +158,7 @@ public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData
             train.finishTraining();
 
             // TODO: replace null in ctx or remove ctx param completely;
-            res.put(subPopulation, input.metaoptimizer().extractStats(train.getGenetic().getPopulation(), null, null));
+            res.put(subPopulation, input.metaoptimizer().extractStats(train.getGenetic().getPopulation(), input.metaoptimizer().initialData(subPopulation), null));
 
 //            Encog.getInstance().shutdown();
 

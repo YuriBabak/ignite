@@ -72,7 +72,8 @@ public class LocalPopulation<S, U extends Serializable> {
             }
         }
 
-        res.values().forEach(population -> {
+        res.entrySet().forEach(entry -> {
+            Population population = entry.getValue();
             Species species = population.getSpecies().get(0);
             species.getMembers().sort(Comparator.comparing(Genome::getScore));
             Genome best = species.getMembers().get(0);
@@ -80,7 +81,7 @@ public class LocalPopulation<S, U extends Serializable> {
             population.setBestGenome(best);
 
             GATrainerInput<? extends MLMethod, S, U> input = InputCache.getOrCreate(ignite).get(trainingUuid);
-            MethodFactory mlMtdFactory = () -> input.methodFactory().get();
+            MethodFactory mlMtdFactory = () -> input.methodFactory(entry.getKey()).get();
             population.setGenomeFactory(new MLMethodGenomeFactory(mlMtdFactory, population));
         });
 

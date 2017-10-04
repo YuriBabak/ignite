@@ -17,25 +17,32 @@
 
 package org.apache.ignite.ml.encog;
 
+import java.io.Serializable;
+
 /**
  * Key(layer, output neuron, input neuron) for locking mask.
  *
  * Used for simulate topology changes.
  */
-public class LockKey {
+public class LockKey implements Serializable {
     int layer;
-    int out;
-    int in;
+    int neuron;
 
     /**
      * @param layer Layer.
-     * @param out Out.
-     * @param in In.
+     * @param neuron In.
      */
-    public LockKey(int layer, int out, int in) {
+    public LockKey(int layer, int neuron) {
         this.layer = layer;
-        this.out = out;
-        this.in = in;
+        this.neuron = neuron;
+    }
+
+    public int layer() {
+        return layer;
+    }
+
+    public int neuron() {
+        return neuron;
     }
 
     /** {@inheritDoc} */
@@ -48,7 +55,7 @@ public class LockKey {
 
         LockKey that = (LockKey)o;
 
-        return layer == that.layer && out == that.out && in == that.in;
+        return layer == that.layer && neuron == that.neuron;
     }
 
     /** {@inheritDoc} */

@@ -1,6 +1,10 @@
 package org.apache.ignite.ml.nn;
 
 import lombok.NoArgsConstructor;
+import org.apache.ignite.ml.nn.impl.SGDUpdater;
+import org.apache.ignite.ml.nn.layers.ActivationLayerIgnite;
+import org.apache.ignite.ml.nn.layers.ConvolutionLayerIgnite;
+import org.apache.ignite.ml.nn.layers.ElementWiseAddVertexIgnite;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Model;

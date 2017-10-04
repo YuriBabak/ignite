@@ -158,7 +158,7 @@ public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData
             // TODO: replace null in ctx or remove ctx param completely;
             res.put(subPopulation, input.metaoptimizer().extractStats(train.getGenetic().getPopulation(), null, null));
 
-            Encog.getInstance().shutdown();
+//            Encog.getInstance().shutdown();
 
             // Load all genomes into cache.
             for (Genome genome : train.getGenetic().getPopulation().getSpecies().get(0).getMembers()) {

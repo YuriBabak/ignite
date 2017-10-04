@@ -54,7 +54,7 @@ public class LearningRateAdjuster implements Metaoptimizer<LearningRateAdjuster.
         if (prevStats == null)
             return new LearningRateStats(curScure, null, 1.0);
         else {
-            double improvement = (prevStats.score - curScure) / curScure;
+            double improvement = (prevStats.score - curScure);
             return new LearningRateStats(curScure, improvement, prevStats.learningRate * (1 + improvement));
         }
     }
@@ -66,7 +66,7 @@ public class LearningRateAdjuster implements Metaoptimizer<LearningRateAdjuster.
 
     @Override public MLMethodGeneticAlgorithm statsHandler(MLMethodGeneticAlgorithm train, LearningRateStats stats) {
         TrainingUtils.getOperatorsByClass(train, HasLearningRate.class).forEach(op -> {
-            op.setLearningRate(stats.learningRate);
+            op.setLearningRate(10 * stats.relImprovement);
         });
 
         return train;

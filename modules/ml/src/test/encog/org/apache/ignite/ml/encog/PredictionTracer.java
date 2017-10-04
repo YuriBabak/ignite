@@ -17,10 +17,18 @@
 
 package org.apache.ignite.ml.encog;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
+import java.util.UUID;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -48,6 +56,10 @@ import org.jetbrains.annotations.NotNull;
 public class PredictionTracer extends GenTest {
     /** */
     private static final String MNIST_LOCATION = "C:/work/test/mnist/";
+
+    /** */
+    private static final String delim = ",";
+
 
     /** */
     public void testPrediction() throws IOException {
@@ -131,15 +143,31 @@ public class PredictionTracer extends GenTest {
 
     /** */
     private void calculateError(EncogMethodWrapper mdl) throws IOException {
-        MnistUtils.Pair<double[][], double[][]> testMnistData = MnistUtils.mnist(MNIST_LOCATION + "t10k-images-idx3-ubyte", MNIST_LOCATION + "t10k-labels-idx1-ubyte", new Random(), 10_000);
+        MnistUtils.Pair<double[][], double[][]> testMnistData = MnistUtils.mnist(
+            MNIST_LOCATION + "t10k-images-idx3-ubyte", MNIST_LOCATION + "t10k-labels-idx1-ubyte",
+            new Random(), 10_000);
 
-        IgniteBiFunction<Model<MLData, double[]>, MnistUtils.Pair<double[][], double[][]>, Double> errorsPercentage = errorsPercentage();
+        ResultsWriter writer = new ResultsWriter();
+
+        writeHeader(writer);
+
+        IgniteBiFunction<Model<MLData, double[]>, MnistUtils.Pair<double[][], double[][]>, Double> errorsPercentage
+            = errorsPercentage(writer::append);
+
         Double accuracy = errorsPercentage.apply(mdl, testMnistData);
+
         System.out.println(">>> Errs percentage: " + accuracy);
+        System.out.println(">>> Tracing data saved: " + writer);
     }
 
     /** */
-    private IgniteBiFunction<Model<MLData, double[]>, MnistUtils.Pair<double[][],double[][]>, Double> errorsPercentage(){
+    private void writeHeader(ResultsWriter writer) {
+        writer.append("index" + delim + "expected" + delim + "actual");
+    }
+
+    /** */
+    private IgniteBiFunction<Model<MLData, double[]>, MnistUtils.Pair<double[][],double[][]>, Double> errorsPercentage(
+        Consumer<String> writer) {
         return (model, pair) -> {
 
             double[][] k = pair.getFst();
@@ -156,7 +184,7 @@ public class PredictionTracer extends GenTest {
                 if (i % 100 == 0)
                     System.out.println(Arrays.toString(predict));
 
-                if(verifyPrediction(v[i], predict))
+                if(verifyPrediction(v[i], predict, i, writer))
                     cnt++;
             }
 
@@ -165,11 +193,76 @@ public class PredictionTracer extends GenTest {
     }
 
     /** */
-    private boolean verifyPrediction(double[] exp, double[] predict) {
-        // todo add output to CSV file here, possibly along with index
+    private boolean verifyPrediction(double[] exp, double[] predict, int idx, Consumer<String> writer) {
         int predictedDigit = toDigit(predict);
         int idealDigit = toDigit(exp);
 
+        writer.accept(formatResults(idx, idealDigit, predictedDigit));
+
         return predictedDigit == idealDigit;
+    }
+
+    /** */
+    private String formatResults(int idx, double exp, double actual) {
+        assert !formatDouble(1000_000_001.1).contains(delim) : "Formatted results contain [" + delim + "].";
+
+        return "" +
+            idx +
+            delim +
+            formatDouble(exp) +
+            delim +
+            formatDouble(actual);
+    }
+
+    /** */
+    private String formatDouble(double val) {
+        return String.format(Locale.US, "%f", val);
+    }
+
+    /** */
+    private static class ResultsWriter {
+        /** */
+        private final File tmp = createTmpFile();
+
+        /** */
+        void append(String res) {
+            if (res == null)
+                throw new IllegalArgumentException("Prediction tracing data is null.");
+
+            try {
+                writeResults(res, tmp);
+            }
+            catch (IOException e) {
+                throw new RuntimeException("Failed to write to [" + this + "].");
+            }
+        }
+
+        /** */
+        private void writeResults(String res, File tmp) throws IOException {
+            final String unixLineSeparator = "\n";
+
+            try (final PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(tmp.toURI()),
+                StandardOpenOption.APPEND, StandardOpenOption.CREATE))) {
+                writer.write(res + unixLineSeparator);
+            }
+        }
+
+        /** */
+        private File createTmpFile() {
+            final String prefix = UUID.randomUUID().toString(), suffix = ".csv";
+
+            try {
+                return File.createTempFile(prefix, suffix);
+            }
+            catch (IOException e) {
+                throw new RuntimeException("Failed to create file [" + prefix + suffix + "].");
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "ResultsWriter{" + "tmp=" + tmp.getAbsolutePath() +
+                '}';
+        }
     }
 }

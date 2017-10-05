@@ -597,7 +597,9 @@ public class WavFile
 
 			for (int c=0 ; c<numChannels ; c++)
 			{
-				sampleBuffer[offset] = floatOffset + (double) readSample() / floatScale;
+				double v = floatOffset + (double)readSample() / floatScale;
+//				System.out.println(v);
+				sampleBuffer[offset] = v;
 				offset ++;
 			}
 

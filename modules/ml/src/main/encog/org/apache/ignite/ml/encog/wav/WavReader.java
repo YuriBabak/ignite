@@ -19,6 +19,7 @@ package org.apache.ignite.ml.encog.wav;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.ignite.IgniteException;
@@ -34,7 +35,7 @@ public class WavReader {
      * @param numOfFramesInBatch Number of frames in batch.
      */
     public static List<double[]> read(String path, int numOfFramesInBatch){
-        List<double[]> batchs = new LinkedList<>();
+        List<double[]> batchs = new ArrayList<>();
 
         try {
             WavFile wavFile = WavFile.openWavFile(new File(path));

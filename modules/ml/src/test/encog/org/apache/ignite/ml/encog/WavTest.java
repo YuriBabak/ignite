@@ -31,7 +31,9 @@ import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator
 import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
 import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightCrossover;
+import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
+import org.apache.ignite.ml.encog.metaoptimizers.LearningRateAdjuster;
 import org.apache.ignite.ml.encog.metaoptimizers.TopologyChanger;
 import org.apache.ignite.ml.encog.util.Util;
 import org.apache.ignite.ml.encog.wav.WavReader;
@@ -99,21 +101,20 @@ public class WavTest extends GridCommonAbstractTest {
     public void test(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        int framesInBatch = 1000;
+        int framesInBatch = 10_000;
 
         System.out.println("Reading wav...");
         List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample4.wav", framesInBatch);
         System.out.println("Done.");
 
-        int histDepth = 100;
+        int histDepth = 120;
 
-        loadIntoCache(rawData, histDepth);
+        int maxSamples = 100_000;
+        loadIntoCache(rawData, histDepth, maxSamples);
 
-//
-//        // create training data
         int n = 50;
         int k = 49;
-//
+
         IgniteFunction<Integer, IgniteNetwork> fact = i -> {
             IgniteNetwork res = new IgniteNetwork();
             res.addLayer(new BasicLayer(null,false, histDepth));
@@ -128,8 +129,8 @@ public class WavTest extends GridCommonAbstractTest {
         List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
             new NodeCrossover(0.2, "nc"),
             new WeightCrossover(0.2, "wc"),
-//            new WeightMutation(0.2, 0.05, "wm"),
-            new MutateNodes(10, 0.2, 0.05, "mn"));
+            new WeightMutation(0.2, 0.1, "wm"),
+            new MutateNodes(10, 0.2, 0.1, "mn"));
 //
         IgniteFunction<Integer, TopologyChanger.Topology> topologySupplier = (IgniteFunction<Integer, TopologyChanger.Topology>)subPop -> {
             Map<LockKey, Double> locks = new HashMap<>();
@@ -141,7 +142,7 @@ public class WavTest extends GridCommonAbstractTest {
 
             return new TopologyChanger.Topology(locks);
         };
-        int datasetSize = rawData.size() - histDepth - 1;
+        int datasetSize = Math.min(maxSamples, rawData.size() - histDepth - 1);
         System.out.println("DS size " + datasetSize);
         GaTrainerCacheInput input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
@@ -151,8 +152,8 @@ public class WavTest extends GridCommonAbstractTest {
             30,
             (in, ignite) -> new TrainingSetScore(in.mlDataSet(ignite)),
             3,
-            new TopologyChanger(topologySupplier).andThen(new AddLeaders(0.2))/*.andThen(new LearningRateAdjuster())*/,
-            0.02
+            new AddLeaders(0.2).andThen(new LearningRateAdjuster())/*.andThen(new LearningRateAdjuster())*/,
+            0.2
         );
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);
@@ -166,7 +167,7 @@ public class WavTest extends GridCommonAbstractTest {
      * @param wav Wav.
      * @param historyDepth History depth.
      */
-    private void loadIntoCache(List<double[]> wav, int historyDepth) {
+    private void loadIntoCache(List<double[]> wav, int historyDepth, int maxSamples) {
         TestTrainingSetCache.getOrCreate(ignite);
 
         try (IgniteDataStreamer<Integer, MLDataPair> stmr = ignite.dataStreamer(TestTrainingSetCache.NAME)) {
@@ -174,8 +175,9 @@ public class WavTest extends GridCommonAbstractTest {
 
             int samplesCnt = wav.size();
             System.out.println("Loading " + samplesCnt + " samples into cache...");
-            for (int i = historyDepth; i < samplesCnt - 1; i++){
+            for (int i = historyDepth; i < samplesCnt - 1 && (i - historyDepth) < maxSamples; i++){
 
+                // The mean is calculated inefficient
                 BasicMLData dataSetEntry = new BasicMLData(wav.subList(i - historyDepth, i).stream().map(doubles ->
                     Arrays.stream(doubles).sum() / doubles.length).mapToDouble(d -> d).toArray());
 
@@ -183,8 +185,11 @@ public class WavTest extends GridCommonAbstractTest {
                 double[] lable = {Arrays.stream(rawLable).sum() / rawLable.length};
 
                 stmr.addData(i - historyDepth, new BasicMLDataPair(dataSetEntry, new BasicMLData(lable)));
-            }
 
+                if (i % 5000 == 0)
+                    System.out.println("Loaded " + i);
+            }
+            System.out.println("Done");
         }
     }
 }

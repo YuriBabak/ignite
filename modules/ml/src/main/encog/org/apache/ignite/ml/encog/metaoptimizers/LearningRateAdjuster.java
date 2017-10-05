@@ -60,6 +60,7 @@ public class LearningRateAdjuster implements Metaoptimizer<LearningRateAdjuster.
 
     @Override public MLMethodGeneticAlgorithm statsHandler(MLMethodGeneticAlgorithm train, LearningRateStats stats) {
         double dispIdx = stats.scoresVar.m2() / stats.scoresVar.mean();
+
         System.out.println("Disp idx " + dispIdx);
 
         return train;

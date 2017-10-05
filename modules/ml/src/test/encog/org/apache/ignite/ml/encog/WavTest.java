@@ -18,25 +18,38 @@
 package org.apache.ignite.ml.encog;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
+import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
+import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
+import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
+import org.apache.ignite.ml.encog.evolution.operators.WeightCrossover;
+import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
+import org.apache.ignite.ml.encog.metaoptimizers.TopologyChanger;
+import org.apache.ignite.ml.encog.util.Util;
 import org.apache.ignite.ml.encog.wav.WavReader;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.basic.BasicMLData;
 import org.encog.ml.data.basic.BasicMLDataPair;
+import org.encog.neural.networks.layers.BasicLayer;
+import org.encog.neural.networks.training.TrainingSetScore;
 
 /**
  * TODO: add description.
  */
 public class WavTest extends GridCommonAbstractTest {
     private static final int NODE_COUNT = 3;
-    private static String WAV_LOCAL = "/home/babak/Downloads/";
+    private static String WAV_LOCAL = "C:\\Users\\Yury\\Downloads\\wav\\";
 
     /** Grid instance. */
     protected Ignite ignite;
@@ -89,8 +102,62 @@ public class WavTest extends GridCommonAbstractTest {
         int framesInBatch = 1000;
 
         System.out.println("Reading wav...");
-        WavReader.read(WAV_LOCAL + "sample4.wav", framesInBatch);
+        List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample4.wav", framesInBatch);
         System.out.println("Done.");
+
+        int histDepth = 100;
+
+        int inputWidth = rawData.get(0).length;
+
+        loadIntoCache(rawData, histDepth);
+
+//
+//        // create training data
+        int n = 50;
+        int k = 49;
+//
+        IgniteFunction<Integer, IgniteNetwork> fact = i -> {
+            IgniteNetwork res = new IgniteNetwork();
+            res.addLayer(new BasicLayer(null,false,inputWidth));
+            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,n));
+            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSoftMax(),false,1));
+            res.getStructure().finalizeStructure();
+
+            res.reset();
+            return res;
+        };
+//
+        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
+            new NodeCrossover(0.2, "nc"),
+            new WeightCrossover(0.2, "wc"),
+//            new WeightMutation(0.2, 0.05, "wm"),
+            new MutateNodes(10, 0.2, 0.05, "mn"));
+//
+        IgniteFunction<Integer, TopologyChanger.Topology> topologySupplier = (IgniteFunction<Integer, TopologyChanger.Topology>)subPop -> {
+            Map<LockKey, Double> locks = new HashMap<>();
+
+            int[] toDrop = Util.selectKDistinct(n, Math.abs(new Random().nextInt()) % k);
+
+            for (int neuron : toDrop)
+                locks.put(new LockKey(1, neuron), 0.0);
+
+            return new TopologyChanger.Topology(locks);
+        };
+        GaTrainerCacheInput input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
+            fact,
+            inputWidth,
+            60,
+            evoOps,
+            30,
+            (in, ignite) -> new TrainingSetScore(in.mlDataSet(ignite)),
+            3,
+            new TopologyChanger(topologySupplier).andThen(new AddLeaders(0.2))/*.andThen(new LearningRateAdjuster())*/,
+            0.02
+        );
+
+        EncogMethodWrapper model = new GATrainer(ignite).train(input);
+//
+//        calculateError(model);
     }
 
     /**

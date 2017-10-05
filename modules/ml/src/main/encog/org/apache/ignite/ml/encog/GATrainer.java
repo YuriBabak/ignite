@@ -158,7 +158,7 @@ public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData
             train.finishTraining();
 
             // TODO: replace null in ctx or remove ctx param completely;
-            res.put(subPopulation, input.metaoptimizer().extractStats(train.getGenetic().getPopulation(), input.metaoptimizer().initialData(subPopulation), null));
+            res.put(subPopulation, input.metaoptimizer().extractStats(train.getGenetic().getPopulation(), input.metaoptimizer().initialData(subPopulation)));
 
 //            Encog.getInstance().shutdown();
 

@@ -17,10 +17,12 @@
 
 package org.apache.ignite.ml.math.statistics;
 
+import java.io.Serializable;
+
 /**
  * This class encapsulates calculating variance.
  */
-public class Variance {
+public class Variance implements Serializable {
     /** */
     private double mean;
 

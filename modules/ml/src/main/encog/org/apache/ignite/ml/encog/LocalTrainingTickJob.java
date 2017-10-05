@@ -86,7 +86,7 @@ public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJ
             training.finishTraining();
 
             // TODO: pass real context.
-            res.put(subPopulationNum, input.metaoptimizer().extractStats(training.getGenetic().getPopulation(), data.get(subPopulationNum), null));
+            res.put(subPopulationNum, input.metaoptimizer().extractStats(training.getGenetic().getPopulation(), data.get(subPopulationNum)));
 
             int oldSize = GenomesCache.getOrCreate(ignite).size();
 

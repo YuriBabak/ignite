@@ -48,8 +48,9 @@ public class GroupTrainerTask<S, U extends Serializable> extends ComputeTaskAdap
         Map<ComputeJob, ClusterNode> res = new HashMap<>();
 
         // TODO: do not send whole input data, but divide it.
-        for (ClusterNode node : subgrid)
+        for (ClusterNode node : subgrid) {
             res.put(new LocalTrainingTickJob<>(trainingUuid, inputData), node);
+        }
 
         return res;
     }

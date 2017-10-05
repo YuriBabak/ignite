@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.ml.encog.IgniteNetwork;
 import org.apache.ignite.ml.encog.LockKey;
-import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.encog.ml.ea.genome.Genome;
 import org.encog.ml.ea.population.Population;
@@ -64,8 +63,7 @@ public class TopologyChanger implements Metaoptimizer<TopologyChanger.ScoredTopo
         return topologySupplier.apply(populationNum);
     }
 
-    @Override public ScoredTopology extractStats(Population population, Topology data,
-        TrainingContext ctx) {
+    @Override public ScoredTopology extractStats(Population population, Topology data) {
         IgniteNetwork phenotype = (IgniteNetwork)(((MLMethodGenome)population.getBestGenome()).getPhenotype());
 
         return new ScoredTopology(population.getBestGenome().getScore(), phenotype.getLearningMask());

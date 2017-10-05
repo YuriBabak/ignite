@@ -115,8 +115,8 @@ public class GenTest  extends GridCommonAbstractTest {
         System.out.println("Done.");
 
         // create training data
-        int n = 50;
-        int k = 49;
+        int n = 200;
+        int k = 149;
 
         IgniteFunction<Integer, IgniteNetwork> fact = i -> {
             IgniteNetwork res = new IgniteNetwork();
@@ -133,15 +133,18 @@ public class GenTest  extends GridCommonAbstractTest {
             new NodeCrossover(0.2, "nc"),
             new WeightCrossover(0.2, "wc"),
 //            new WeightMutation(0.2, 0.05, "wm"),
-            new MutateNodes(10, 0.2, 0.05, "mn"));
+            new MutateNodes(10, 0.2, 0.1, "mn"));
 
         IgniteFunction<Integer, TopologyChanger.Topology> topologySupplier = (IgniteFunction<Integer, TopologyChanger.Topology>)subPop -> {
             Map<LockKey, Double> locks = new HashMap<>();
+            int toDropCnt = Math.abs(new Random().nextInt()) % k;
 
-            int[] toDrop = Util.selectKDistinct(n, Math.abs(new Random().nextInt()) % k);
+            int[] toDrop = Util.selectKDistinct(n, toDropCnt);
 
             for (int neuron : toDrop)
                 locks.put(new LockKey(1, neuron), 0.0);
+
+            System.out.println("For population " + subPop + " we dropped " + toDropCnt);
 
             return new TopologyChanger.Topology(locks);
         };
@@ -153,7 +156,10 @@ public class GenTest  extends GridCommonAbstractTest {
             30,
             (in, ignite) -> new TrainingSetScore(in.mlDataSet(ignite)),
             3,
-            new TopologyChanger(topologySupplier).andThen(new AddLeaders(0.2))/*.andThen(new LearningRateAdjuster())*/,
+            new TopologyChanger(topologySupplier).
+                andThen(new AddLeaders(0.2))
+//                .andThen(new LearningRateAdjuster())
+            ,
             0.02
         );
 

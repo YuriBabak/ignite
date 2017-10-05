@@ -106,13 +106,13 @@ public class WavTest extends GridCommonAbstractTest {
     public void test() throws IOException {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        int framesInBatch = 100;
+        int framesInBatch = 50;
 
         System.out.println("Reading wav...");
         List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample4.wav", framesInBatch);
         System.out.println("Done.");
 
-        int histDepth = 120;
+        int histDepth = 240;
 
         int maxSamples = 200_000;
         loadIntoCache(rawData, histDepth, maxSamples);
@@ -135,8 +135,9 @@ public class WavTest extends GridCommonAbstractTest {
             new NodeCrossover(0.2, "nc"),
 //new CrossoverFeatures(0.2, "cf"),
 //            new WeightCrossover(0.2, "wc"),
-            new WeightMutation(0.2, 0.1, "wm"),
-            new MutateNodes(10, 0.2, 1.0, "mn"));
+            new WeightMutation(0.2, 0.05, "wm"),
+            new MutateNodes(10, 0.2, 0.05, "mn")
+        );
 //
         IgniteFunction<Integer, TopologyChanger.Topology> topologySupplier = (IgniteFunction<Integer, TopologyChanger.Topology>)subPop -> {
             Map<LockKey, Double> locks = new HashMap<>();
@@ -161,7 +162,7 @@ public class WavTest extends GridCommonAbstractTest {
             30,
             (in, ignite) -> new TrainingSetScore(in.mlDataSet(ignite)),
             3,
-            new AddLeaders(0.2).andThen(new LearningRateAdjuster()).andThen(new TopologyChanger(topologySupplier))/*.andThen(new LearningRateAdjuster())*/,
+            new AddLeaders(0.2).andThen(new LearningRateAdjuster())/*.andThen(new LearningRateAdjuster())*/,
             0.2
         );
 
@@ -188,10 +189,10 @@ public class WavTest extends GridCommonAbstractTest {
 
                 // The mean is calculated inefficient
                 BasicMLData dataSetEntry = new BasicMLData(wav.subList(i - historyDepth, i).stream().map(doubles ->
-                    Arrays.stream(doubles).sum() / doubles.length).mapToDouble(d -> d).toArray());
+                    (Arrays.stream(doubles).sum() / doubles.length + 1) / 2).mapToDouble(d -> d).toArray());
 
                 double[] rawLable = wav.get(i + 1);
-                double[] lable = {Arrays.stream(rawLable).sum() / rawLable.length};
+                double[] lable = {(Arrays.stream(rawLable).sum() / rawLable.length + 1) / 2};
 
                 stmr.addData(i - historyDepth, new BasicMLDataPair(dataSetEntry, new BasicMLData(lable)));
 
@@ -219,10 +220,10 @@ public class WavTest extends GridCommonAbstractTest {
             for (int i = historyDepth; i < samplesCnt-1; i++){
 
                 BasicMLData dataSetEntry = new BasicMLData(ds.subList(i - historyDepth, i).stream().map(doubles ->
-                    Arrays.stream(doubles).sum() / doubles.length).mapToDouble(d -> d).toArray());
+                    (Arrays.stream(doubles).sum() / doubles.length + 1) / 2).mapToDouble(d -> d).toArray());
 
                 double[] rawLable = ds.get(i + 1);
-                double[] lable = {Arrays.stream(rawLable).sum() / rawLable.length};
+                double[] lable = {(Arrays.stream(rawLable).sum() / rawLable.length + 1) / 2};
 
                 double[] predict = model.predict(dataSetEntry);
 

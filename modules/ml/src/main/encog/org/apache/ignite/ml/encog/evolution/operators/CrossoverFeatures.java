@@ -49,7 +49,7 @@ public class CrossoverFeatures extends IgniteEvolutionaryOperator {
     }
 
     @Override public int offspringProduced() {
-        return 1;
+        return 2;
     }
 
     @Override public int parentsNeeded() {
@@ -87,14 +87,21 @@ public class CrossoverFeatures extends IgniteEvolutionaryOperator {
         Integer[] feature2Neuron1 = feature2Neuron(neuron2Pos1);
         Integer[] feature2Neuron2 = feature2Neuron(neuron2Pos2);
 
+        int innerLayerSize1 = p1.getLayerNeuronCount(1);
+        int innerLayerSize2 = p1.getLayerNeuronCount(1);
+
         for (int feature = 0; feature < feature2Neuron1.length; feature++) {
             int canonicalNeuron = feature2Neuron1[feature];
             int selfNeuron = feature2Neuron2[feature];
 
-            normalize(p2, off, canonicalNeuron, selfNeuron);
+            // Meaning there is really specific role for this neuron. Actually should measure variance of positions of something like this there...
+            if ((canonicalNeuron - (innerLayerSize1 / 2)) / innerLayerSize1 > 0.2 &&
+                (selfNeuron - (innerLayerSize2 / 2)) / innerLayerSize2 > 0.1)
+                normalize(p2, off, canonicalNeuron, selfNeuron);
         }
 
         offspring[offspringIndex] = new MLMethodGenome(off);
+        offspring[offspringIndex + 1] = parents[0];
     }
 
     private void normalize(BasicNetwork p2, BasicNetwork off, int canonicalNeuron, int selfNeuron) {

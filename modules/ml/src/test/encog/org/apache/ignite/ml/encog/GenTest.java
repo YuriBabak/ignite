@@ -110,7 +110,7 @@ public class GenTest  extends GridCommonAbstractTest {
         System.out.println("Done.");
 
         // create training data
-        int n = 200;
+        int n = 50;
         int k = 149;
 
         IgniteFunction<Integer, IgniteNetwork> fact = i -> {
@@ -152,8 +152,8 @@ new CrossoverFeatures(0.1, "cf"),
             30,
             (in, ignite) -> new TrainingSetScore(in.mlDataSet(ignite)),
             3,
-            new TopologyChanger(topologySupplier).
-                andThen(new AddLeaders(0.2))
+            new AddLeaders(0.2)
+            .andThen(new TopologyChanger(topologySupplier))
 //                .andThen(new LearningRateAdjuster())
             ,
             0.02

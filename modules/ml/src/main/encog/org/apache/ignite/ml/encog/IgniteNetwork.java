@@ -32,6 +32,10 @@ import org.encog.neural.networks.BasicNetwork;
 public class IgniteNetwork extends BasicNetwork {
     private Map<LockKey, Double> learningMask = new HashMap<>();
 
+    public IgniteNetwork() {
+        super();
+    }
+
     /**
      * @param encoded Encoded.
      * @param mask Mask.
@@ -133,8 +137,9 @@ public class IgniteNetwork extends BasicNetwork {
             .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.setValue(random.nextDouble())));
     }
 
-    public void reset() {
+    @Override public void reset() {
         learningMask.clear();
+        super.reset();
     }
 
     /**

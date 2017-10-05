@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
+import org.apache.ignite.ml.encog.evolution.operators.CrossoverFeatures;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
 import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
@@ -126,6 +127,7 @@ public class GenTest  extends GridCommonAbstractTest {
         List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
             new NodeCrossover(0.2, "nc"),
             new WeightCrossover(0.2, "wc"),
+new CrossoverFeatures(0.1, "cf"),
 //            new WeightMutation(0.2, 0.05, "wm"),
             new MutateNodes(10, 0.2, 0.1, "mn"));
 

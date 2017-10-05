@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
+import org.apache.ignite.ml.encog.evolution.operators.CrossoverFeatures;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
 import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
@@ -105,7 +106,7 @@ public class WavTest extends GridCommonAbstractTest {
     public void test() throws IOException {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        int framesInBatch = 10_000;
+        int framesInBatch = 100;
 
         System.out.println("Reading wav...");
         List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample4.wav", framesInBatch);
@@ -113,7 +114,7 @@ public class WavTest extends GridCommonAbstractTest {
 
         int histDepth = 120;
 
-        int maxSamples = 100_000;
+        int maxSamples = 200_000;
         loadIntoCache(rawData, histDepth, maxSamples);
 
         int n = 50;
@@ -132,9 +133,10 @@ public class WavTest extends GridCommonAbstractTest {
 //
         List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
             new NodeCrossover(0.2, "nc"),
-            new WeightCrossover(0.2, "wc"),
+//new CrossoverFeatures(0.2, "cf"),
+//            new WeightCrossover(0.2, "wc"),
             new WeightMutation(0.2, 0.1, "wm"),
-            new MutateNodes(10, 0.2, 0.1, "mn"));
+            new MutateNodes(10, 0.2, 1.0, "mn"));
 //
         IgniteFunction<Integer, TopologyChanger.Topology> topologySupplier = (IgniteFunction<Integer, TopologyChanger.Topology>)subPop -> {
             Map<LockKey, Double> locks = new HashMap<>();
@@ -159,7 +161,7 @@ public class WavTest extends GridCommonAbstractTest {
             30,
             (in, ignite) -> new TrainingSetScore(in.mlDataSet(ignite)),
             3,
-            new AddLeaders(0.2).andThen(new LearningRateAdjuster())/*.andThen(new LearningRateAdjuster())*/,
+            new AddLeaders(0.2).andThen(new LearningRateAdjuster()).andThen(new TopologyChanger(topologySupplier))/*.andThen(new LearningRateAdjuster())*/,
             0.2
         );
 

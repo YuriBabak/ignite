@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.encog;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +27,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
@@ -35,9 +37,11 @@ import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
 import org.apache.ignite.ml.encog.metaoptimizers.TopologyChanger;
 import org.apache.ignite.ml.encog.util.Util;
 import org.apache.ignite.ml.encog.wav.WavReader;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.basic.BasicMLData;
 import org.encog.ml.data.basic.BasicMLDataPair;
@@ -48,8 +52,8 @@ import org.encog.neural.networks.training.TrainingSetScore;
  * TODO: add description.
  */
 public class WavTest extends GridCommonAbstractTest {
-    private static final int NODE_COUNT = 3;
-    private static String WAV_LOCAL = "/home/enny/Downloads/";
+    private static final int NODE_COUNT = 1;
+    private static String WAV_LOCAL = "C:\\Users\\Yury\\Downloads\\wav\\";
 
     /** Grid instance. */
     protected Ignite ignite;
@@ -96,7 +100,7 @@ public class WavTest extends GridCommonAbstractTest {
     }
 
     //TODO: WIP
-    public void test(){
+    public void test() throws IOException {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         int framesInBatch = 1000;
@@ -108,11 +112,12 @@ public class WavTest extends GridCommonAbstractTest {
         int histDepth = 100;
 
         loadIntoCache(rawData, histDepth);
+        System.out.println("Done.");
 
 //
 //        // create training data
-        int n = 50;
-        int k = 49;
+        int n = 200;
+        int k = 149;
 //
         IgniteFunction<Integer, IgniteNetwork> fact = i -> {
             IgniteNetwork res = new IgniteNetwork();
@@ -133,11 +138,14 @@ public class WavTest extends GridCommonAbstractTest {
 //
         IgniteFunction<Integer, TopologyChanger.Topology> topologySupplier = (IgniteFunction<Integer, TopologyChanger.Topology>)subPop -> {
             Map<LockKey, Double> locks = new HashMap<>();
+            int toDropCnt = Math.abs(new Random().nextInt()) % k;
 
             int[] toDrop = Util.selectKDistinct(n, Math.abs(new Random().nextInt()) % k);
 
             for (int neuron : toDrop)
                 locks.put(new LockKey(1, neuron), 0.0);
+
+            System.out.println("For population " + subPop + " we dropped " + toDropCnt);
 
             return new TopologyChanger.Topology(locks);
         };
@@ -157,7 +165,7 @@ public class WavTest extends GridCommonAbstractTest {
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);
 //
-//        calculateError(model);
+        calculateError(model, histDepth);
     }
 
     /**
@@ -174,7 +182,7 @@ public class WavTest extends GridCommonAbstractTest {
 
             int samplesCnt = wav.size();
             System.out.println("Loading " + samplesCnt + " samples into cache...");
-            for (int i = historyDepth; i < samplesCnt - 1; i++){
+            for (int i = historyDepth; i < samplesCnt-1; i++){
 
                 BasicMLData dataSetEntry = new BasicMLData(wav.subList(i - historyDepth, i).stream().map(doubles ->
                     Arrays.stream(doubles).sum() / doubles.length).mapToDouble(d -> d).toArray());
@@ -182,9 +190,40 @@ public class WavTest extends GridCommonAbstractTest {
                 double[] rawLable = wav.get(i + 1);
                 double[] lable = {Arrays.stream(rawLable).sum() / rawLable.length};
 
-                stmr.addData(i - historyDepth, new BasicMLDataPair(dataSetEntry, new BasicMLData(lable)));
+                stmr.addData(i, new BasicMLDataPair(dataSetEntry, new BasicMLData(lable)));
             }
 
         }
+    }
+
+    private void calculateError(EncogMethodWrapper model, int historyDepth ) throws IOException {
+        List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample4.wav", 100);
+
+        IgniteBiFunction<Model<MLData, double[]>, List<double[]>, Double> errorsPercentage = errorsPercentage(historyDepth);
+        Double accuracy = errorsPercentage.apply(model, rawData);
+        System.out.println(">>> Errs estimation: " + accuracy);
+    }
+
+    private IgniteBiFunction<Model<MLData, double[]>, List<double[]>, Double> errorsPercentage(int historyDepth){
+        return (model, ds) -> {
+            double cnt = 0L;
+
+            int samplesCnt = ds.size();
+
+            for (int i = historyDepth; i < samplesCnt-1; i++){
+
+                BasicMLData dataSetEntry = new BasicMLData(ds.subList(i - historyDepth, i).stream().map(doubles ->
+                    Arrays.stream(doubles).sum() / doubles.length).mapToDouble(d -> d).toArray());
+
+                double[] rawLable = ds.get(i + 1);
+                double[] lable = {Arrays.stream(rawLable).sum() / rawLable.length};
+
+                double[] predict = model.predict(dataSetEntry);
+
+                cnt += predict[0] * predict[0] - lable[0] * lable[0];
+            }
+
+            return cnt / samplesCnt;
+        };
     }
 }

@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
-import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.encog.ml.ea.genome.BasicGenome;
 import org.encog.ml.ea.genome.Genome;
 import org.encog.ml.ea.population.Population;
@@ -43,7 +42,7 @@ public class AddLeaders implements Metaoptimizer<MLMethodGenome, MLMethodGenome>
         return null;
     }
 
-    @Override public MLMethodGenome extractStats(Population population, MLMethodGenome prevLeader, TrainingContext ctx) {
+    @Override public MLMethodGenome extractStats(Population population, MLMethodGenome prevLeader) {
         MLMethodGenome locallyBest = (MLMethodGenome)population.getBestGenome();
         GenomesCache.processForSaving(locallyBest);
         System.out.println("Locally best score is " + locallyBest.getScore());

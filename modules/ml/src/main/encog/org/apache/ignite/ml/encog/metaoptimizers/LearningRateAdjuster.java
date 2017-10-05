@@ -19,7 +19,6 @@ package org.apache.ignite.ml.encog.metaoptimizers;
 
 import java.io.Serializable;
 import java.util.Map;
-import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.evolution.operators.HasLearningRate;
 import org.apache.ignite.ml.encog.util.TrainingUtils;
 import org.encog.ml.ea.population.Population;
@@ -53,7 +52,7 @@ public class LearningRateAdjuster implements Metaoptimizer<LearningRateAdjuster.
         return null;
     }
 
-    @Override public LearningRateStats extractStats(Population population, LearningRateStats prevStats, TrainingContext ctx) {
+    @Override public LearningRateStats extractStats(Population population, LearningRateStats prevStats) {
         double curScure = population.getBestGenome().getScore();
         if (prevStats == null)
             return new LearningRateStats(curScure, null, 1.0);

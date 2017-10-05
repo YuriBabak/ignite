@@ -25,7 +25,6 @@ import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.metaoptimizers.Metaoptimizer;
 import org.apache.ignite.ml.encog.util.Util;

@@ -22,14 +22,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.encog.caches.TrainingContext;
 import org.encog.ml.ea.population.Population;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 
 public interface Metaoptimizer<S, U extends Serializable> extends Serializable {
     U initialData(int populationNum);
 
-    S extractStats(Population population, U data, TrainingContext ctx);
+    S extractStats(Population population, U data);
 
     // At i-th position of the list contained data which should be sent to i-th iteration.
     Map<Integer, U> statsAggregator(Map<Integer, S> stats);
@@ -50,8 +49,8 @@ public interface Metaoptimizer<S, U extends Serializable> extends Serializable {
                 return new IgniteBiTuple<>(outerThis.initialData(subPopulation), op.initialData(subPopulation));
             }
 
-            @Override public IgniteBiTuple<S, S1> extractStats(Population population, IgniteBiTuple<U, U1> data, TrainingContext ctx) {
-                return new IgniteBiTuple<>(outerThis.extractStats(population, Optional.ofNullable(data).map(IgniteBiTuple::get1).orElse(null), ctx), op.extractStats(population, Optional.ofNullable(data).map(IgniteBiTuple::get2).orElse(null), ctx));
+            @Override public IgniteBiTuple<S, S1> extractStats(Population population, IgniteBiTuple<U, U1> data) {
+                return new IgniteBiTuple<>(outerThis.extractStats(population, Optional.ofNullable(data).map(IgniteBiTuple::get1).orElse(null)), op.extractStats(population, Optional.ofNullable(data).map(IgniteBiTuple::get2).orElse(null)));
             }
 
             @Override public Map<Integer, IgniteBiTuple<U, U1>> statsAggregator(Map<Integer, IgniteBiTuple<S, S1>> stats) {

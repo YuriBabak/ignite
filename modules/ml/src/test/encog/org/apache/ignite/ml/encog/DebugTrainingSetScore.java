@@ -15,54 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.statistics;
+package org.apache.ignite.ml.encog;
 
-import java.io.Serializable;
+import org.encog.ml.MLMethod;
+import org.encog.ml.data.MLDataSet;
+import org.encog.neural.networks.training.TrainingSetScore;
 
-/**
- * This class encapsulates calculating variance.
- */
-public class Variance implements Serializable {
-    /** */
-    private double mean;
-
-    /** */
-    private long n;
-
-    /** */
-    private double m2;
-
-    /** */
-    public Variance() {
-        mean = 0;
-        n = 0;
-        m2 = 0;
+public class DebugTrainingSetScore extends TrainingSetScore {
+    /**
+     * Construct a training set score calculation.
+     *
+     * @param training The training data to use.
+     */
+    public DebugTrainingSetScore(MLDataSet training) {
+        super(training);
     }
 
-    /** */
-    public Variance update(Double x) {
-        n++;
-        double delta = x - mean;
-        mean += delta / n;
-        double delta2 = x - mean;
-        m2 += delta * delta2;
-        return this;
-    }
-
-    /** */
-    public double getResult() {
-        return m2;
-    }
-
-    public double mean() {
-        return mean;
-    }
-
-    public long n() {
-        return n;
-    }
-
-    public double m2() {
-        return m2;
+    @Override public double calculateScore(MLMethod method) {
+        double sc = super.calculateScore(method);
+        System.out.println("Score: " + sc);
+        return sc;
     }
 }

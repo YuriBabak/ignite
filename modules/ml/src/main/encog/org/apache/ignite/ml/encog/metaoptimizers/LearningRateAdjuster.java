@@ -19,8 +19,7 @@ package org.apache.ignite.ml.encog.metaoptimizers;
 
 import java.io.Serializable;
 import java.util.Map;
-import org.apache.ignite.ml.encog.evolution.operators.HasLearningRate;
-import org.apache.ignite.ml.encog.util.TrainingUtils;
+import org.apache.ignite.ml.math.statistics.Variance;
 import org.encog.ml.ea.population.Population;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 
@@ -28,38 +27,30 @@ import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
  * Implementation of {@link Metaoptimizer} for adjustable learning(mutation) rate.
  */
 public class LearningRateAdjuster implements Metaoptimizer<LearningRateAdjuster.LearningRateStats, LearningRateAdjuster.LearningRateStats> {
+    private int maxGlobalTicks;
+
     public static class LearningRateStats implements Serializable {
-        Double score;
-        Double relImprovement;
+        Variance scoresVar;
         Double learningRate;
 
-        public LearningRateStats(Double score, Double relImprovement, Double learningRate) {
-            this.score = score;
-            this.relImprovement = relImprovement;
+        public LearningRateStats(Double learningRate) {
             this.learningRate = learningRate;
+            scoresVar = new Variance();
         }
 
-        @Override public String toString() {
-            return "LearningRateStats [" +
-                "score=" + score +
-                ", relImprovement=" + relImprovement +
-                ", learningRate=" + learningRate +
-                ']';
+        public LearningRateStats update(double score) {
+            this.scoresVar.update(score);
+            return this;
         }
     }
 
     @Override public LearningRateStats initialData(int populationNum) {
-        return null;
+        return new LearningRateStats(0.1);
     }
 
     @Override public LearningRateStats extractStats(Population population, LearningRateStats prevStats) {
-        double curScure = population.getBestGenome().getScore();
-        if (prevStats == null)
-            return new LearningRateStats(curScure, null, 1.0);
-        else {
-            double improvement = (prevStats.score - curScure);
-            return new LearningRateStats(curScure, improvement, prevStats.learningRate * (1 + improvement));
-        }
+        double curScore = population.getBestGenome().getScore();
+        return prevStats.update(curScore);
     }
 
     @Override public Map<Integer, LearningRateStats> statsAggregator(Map<Integer, LearningRateStats> stats) {
@@ -68,9 +59,8 @@ public class LearningRateAdjuster implements Metaoptimizer<LearningRateAdjuster.
     }
 
     @Override public MLMethodGeneticAlgorithm statsHandler(MLMethodGeneticAlgorithm train, LearningRateStats stats) {
-        TrainingUtils.getOperatorsByClass(train, HasLearningRate.class).forEach(op -> {
-            op.setLearningRate(10 * stats.relImprovement);
-        });
+        double dispIdx = stats.scoresVar.m2() / stats.scoresVar.mean();
+        System.out.println("Disp idx " + dispIdx);
 
         return train;
     }

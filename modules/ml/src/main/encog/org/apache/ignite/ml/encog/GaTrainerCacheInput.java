@@ -50,6 +50,19 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
     private Metaoptimizer<S, U> metaoptimizer;
     private double batchPercentage;
 
+    /**
+     *
+     * @param cacheName
+     * @param mtdFactory
+     * @param size Size of training set
+     * @param populationSize
+     * @param evolutionaryOperators
+     * @param iterationsPerLocalTick
+     * @param scoreCalculator
+     * @param speciesCount
+     * @param metaoptimizer
+     * @param batchPercentage
+     */
     public GaTrainerCacheInput(String cacheName,
         IgniteFunction<Integer, T> mtdFactory,
         int size,

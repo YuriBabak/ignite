@@ -140,6 +140,7 @@ public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData
             if (GenomesCache.affinity(ignite).mapKeyToNode(sampleKey) != ignite.cluster().localNode())
                 continue;
 
+            System.out.println("Pop size: " + input.subPopulationSize());
             MLMethodGeneticAlgorithm train = new MLMethodGeneticAlgorithm(mtdFactory, score, input.subPopulationSize());
 
             evoOps.forEach(operator -> {

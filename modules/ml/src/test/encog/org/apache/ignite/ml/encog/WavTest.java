@@ -49,7 +49,7 @@ import org.encog.neural.networks.training.TrainingSetScore;
  */
 public class WavTest extends GridCommonAbstractTest {
     private static final int NODE_COUNT = 3;
-    private static String WAV_LOCAL = "C:\\Users\\Yury\\Downloads\\wav\\";
+    private static String WAV_LOCAL = "/home/enny/Downloads/";
 
     /** Grid instance. */
     protected Ignite ignite;
@@ -107,8 +107,6 @@ public class WavTest extends GridCommonAbstractTest {
 
         int histDepth = 100;
 
-        int inputWidth = rawData.get(0).length;
-
         loadIntoCache(rawData, histDepth);
 
 //
@@ -118,7 +116,7 @@ public class WavTest extends GridCommonAbstractTest {
 //
         IgniteFunction<Integer, IgniteNetwork> fact = i -> {
             IgniteNetwork res = new IgniteNetwork();
-            res.addLayer(new BasicLayer(null,false,inputWidth));
+            res.addLayer(new BasicLayer(null,false, histDepth));
             res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,n));
             res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSoftMax(),false,1));
             res.getStructure().finalizeStructure();
@@ -143,9 +141,11 @@ public class WavTest extends GridCommonAbstractTest {
 
             return new TopologyChanger.Topology(locks);
         };
+        int datasetSize = rawData.size() - histDepth - 1;
+        System.out.println("DS size " + datasetSize);
         GaTrainerCacheInput input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
-            inputWidth,
+            datasetSize,
             60,
             evoOps,
             30,
@@ -174,7 +174,7 @@ public class WavTest extends GridCommonAbstractTest {
 
             int samplesCnt = wav.size();
             System.out.println("Loading " + samplesCnt + " samples into cache...");
-            for (int i = historyDepth; i < samplesCnt-1; i++){
+            for (int i = historyDepth; i < samplesCnt - 1; i++){
 
                 BasicMLData dataSetEntry = new BasicMLData(wav.subList(i - historyDepth, i).stream().map(doubles ->
                     Arrays.stream(doubles).sum() / doubles.length).mapToDouble(d -> d).toArray());
@@ -182,7 +182,7 @@ public class WavTest extends GridCommonAbstractTest {
                 double[] rawLable = wav.get(i + 1);
                 double[] lable = {Arrays.stream(rawLable).sum() / rawLable.length};
 
-                stmr.addData(i, new BasicMLDataPair(dataSetEntry, new BasicMLData(lable)));
+                stmr.addData(i - historyDepth, new BasicMLDataPair(dataSetEntry, new BasicMLData(lable)));
             }
 
         }

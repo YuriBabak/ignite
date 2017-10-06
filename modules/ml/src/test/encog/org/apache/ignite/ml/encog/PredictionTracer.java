@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
+import org.apache.ignite.ml.encog.evolution.operators.CrossoverFeatures;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
 import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
@@ -62,6 +63,7 @@ public class PredictionTracer extends GenTest {
     /** */
     public void testPrediction() throws IOException {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
         System.out.println("Reading mnist...");
         MnistUtils.Pair<double[][], double[][]> mnist = MnistUtils.mnist(MNIST_LOCATION + "train-images-idx3-ubyte", MNIST_LOCATION + "train-labels-idx1-ubyte", new Random(), 60_000);
 //        MnistUtils.Pair<double[][], double[][]> mnist = MnistUtils.mnist(MNIST_LOCATION + "t10k-images-idx3-ubyte", MNIST_LOCATION + "t10k-labels-idx1-ubyte", new Random(), 10_000);
@@ -74,7 +76,7 @@ public class PredictionTracer extends GenTest {
 
         // create training data
         int n = 50;
-        int k = 49;
+        int k = 149;
 
         IgniteFunction<Integer, IgniteNetwork> fact = i -> {
             IgniteNetwork res = new IgniteNetwork();
@@ -90,16 +92,20 @@ public class PredictionTracer extends GenTest {
         List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
             new NodeCrossover(0.2, "nc"),
             new WeightCrossover(0.2, "wc"),
+            new CrossoverFeatures(0.1, "cf"),
 //            new WeightMutation(0.2, 0.05, "wm"),
-            new MutateNodes(10, 0.2, 0.05, "mn"));
+            new MutateNodes(10, 0.2, 0.1, "mn"));
 
         IgniteFunction<Integer, TopologyChanger.Topology> topSupplier = (IgniteFunction<Integer, TopologyChanger.Topology>)subPop -> {
             Map<LockKey, Double> locks = new HashMap<>();
+            int toDropCnt = Math.abs(new Random().nextInt()) % k;
 
-            int[] toDrop = Util.selectKDistinct(n, Math.abs(new Random().nextInt()) % k);
+            int[] toDrop = Util.selectKDistinct(n, toDropCnt);
 
             for (int neuron : toDrop)
                 locks.put(new LockKey(1, neuron), 0.0);
+
+            System.out.println("For population " + subPop + " we dropped " + toDropCnt);
 
             return new TopologyChanger.Topology(locks);
         };
@@ -111,7 +117,10 @@ public class PredictionTracer extends GenTest {
             30,
             (in, ignite) -> new TrainingSetScore(in.mlDataSet(ignite)),
             3,
-            new TopologyChanger(topSupplier).andThen(new AddLeaders(0.2))/*.andThen(new LearningRateAdjuster())*/,
+            new AddLeaders(0.2)
+                .andThen(new TopologyChanger(topSupplier))
+//                .andThen(new LearningRateAdjuster())
+            ,
             0.02
         );
 

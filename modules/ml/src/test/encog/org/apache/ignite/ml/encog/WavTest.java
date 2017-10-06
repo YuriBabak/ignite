@@ -44,6 +44,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.encog.engine.network.activation.ActivationSigmoid;
 import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.basic.BasicMLData;
@@ -106,37 +107,42 @@ public class WavTest extends GridCommonAbstractTest {
     public void test() throws IOException {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        int framesInBatch = 50;
+        int framesInBatch = 2;
 
         System.out.println("Reading wav...");
         List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample4.wav", framesInBatch);
         System.out.println("Done.");
 
-        int histDepth = 240;
+        int pow = 4;
+        int histDepth = (int)Math.pow(2, pow);
 
-        int maxSamples = 200_000;
+        int maxSamples = 2_000_000;
         loadIntoCache(rawData, histDepth, maxSamples);
 
         int n = 50;
         int k = 49;
 
         IgniteFunction<Integer, IgniteNetwork> fact = i -> {
-            IgniteNetwork res = new IgniteNetwork();
-            res.addLayer(new BasicLayer(null,false, histDepth));
-            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,n));
-            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSoftMax(),false,1));
-            res.getStructure().finalizeStructure();
-
-            res.reset();
-            return res;
+//            IgniteNetwork res = new IgniteNetwork();
+//            res.addLayer(new BasicLayer(null,false, histDepth));
+//            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,n));
+//            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,n));
+//            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,n));
+//            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSoftMax(),false,1));
+//            res.getStructure().finalizeStructure();
+//
+//
+//            res.reset();
+            return buildTreeLikeNet(pow);
         };
 //
+        double lr = 0.5;
         List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
             new NodeCrossover(0.2, "nc"),
-//new CrossoverFeatures(0.2, "cf"),
+//            new CrossoverFeatures(0.2, "cf"),
 //            new WeightCrossover(0.2, "wc"),
-            new WeightMutation(0.2, 0.05, "wm"),
-            new MutateNodes(10, 0.2, 0.05, "mn")
+            new WeightMutation(0.2, lr, "wm"),
+            new MutateNodes(10, 0.2, lr, "mn")
         );
 //
         IgniteFunction<Integer, TopologyChanger.Topology> topologySupplier = (IgniteFunction<Integer, TopologyChanger.Topology>)subPop -> {
@@ -163,7 +169,7 @@ public class WavTest extends GridCommonAbstractTest {
             (in, ignite) -> new TrainingSetScore(in.mlDataSet(ignite)),
             3,
             new AddLeaders(0.2).andThen(new LearningRateAdjuster())/*.andThen(new LearningRateAdjuster())*/,
-            0.2
+            0.02
         );
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);
@@ -209,6 +215,29 @@ public class WavTest extends GridCommonAbstractTest {
         IgniteBiFunction<Model<MLData, double[]>, List<double[]>, Double> errorsPercentage = errorsPercentage(historyDepth);
         Double accuracy = errorsPercentage.apply(model, rawData);
         System.out.println(">>> Errs estimation: " + accuracy);
+    }
+
+    private static IgniteNetwork buildTreeLikeNet(int leavesCountLog) {
+
+        IgniteNetwork res = new IgniteNetwork();
+        for (int i = leavesCountLog; i >=0; i--)
+            res.addLayer(new BasicLayer(i == 0 ? null : new ActivationSigmoid(), false, (int)Math.pow(2, i)));
+
+        res.getStructure().finalizeStructure();
+
+        for (int i = 0; i < leavesCountLog - 1; i++) {
+            for (int n = 0; n < res.getLayerNeuronCount(i); n += 2) {
+                res.dropOutputsFrom(i, n);
+                res.dropOutputsFrom(i, n + 1);
+
+                res.enableConnection(i, n, n / 2, true);
+                res.enableConnection(i, n + 1, n / 2, true);
+            }
+        }
+
+        res.reset();
+
+        return res;
     }
 
     private IgniteBiFunction<Model<MLData, double[]>, List<double[]>, Double> errorsPercentage(int historyDepth){

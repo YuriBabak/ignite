@@ -92,6 +92,14 @@ public class IgniteNetwork extends BasicNetwork {
         removeWeights(layer, neuronNumberInLayer);
     }
 
+    public void dropOutputsFrom(int layer, int neuronNumberInLayer) {
+        if (layer < getLayerCount() - 1) {
+            int nl = layer + 1;
+            for (int nn = 0; nn < getLayerNeuronCount(nl); nn++)
+                setWeight(layer, neuronNumberInLayer, nn, 0.0);
+        }
+    }
+
     private void removeWeights(int layer, int neuronNumberInLayer) {
         // remove inputs
         if (layer > 0) {

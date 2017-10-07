@@ -41,7 +41,6 @@ import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
 import org.apache.ignite.ml.encog.metaoptimizers.BasicStatsCounter;
-import org.apache.ignite.ml.encog.metaoptimizers.LearningRateAdjuster;
 import org.apache.ignite.ml.encog.metaoptimizers.TopologyChanger;
 import org.apache.ignite.ml.encog.util.Util;
 import org.apache.ignite.ml.encog.wav.WavReader;
@@ -240,7 +239,7 @@ public class PredictionTracer extends GenTest {
 
     /** */
     private void writeHeader(ResultsWriter writer) {
-        writer.append("index" + delim + "expected" + delim + "actual");
+        writer.append("index" + delim + "expected" + delim + "actual" + delim + "diff");
     }
 
     /** */
@@ -259,7 +258,9 @@ public class PredictionTracer extends GenTest {
             delim +
             formatDouble(exp) +
             delim +
-            formatDouble(actual);
+            formatDouble(actual) +
+            delim +
+            formatDouble(Math.abs(exp - actual));
     }
 
     /** */

@@ -58,7 +58,7 @@ import org.encog.neural.networks.training.TrainingSetScore;
 /** IMPL NOTE do NOT run this as test class because JUnit3 will pick up redundant test from superclass. */
 public class PredictionTracer extends GenTest {
     /** */
-    private static final String MNIST_LOCATION = "C:/work/test/mnist/";
+    private static final String WAV_LOCAL = "/home/enny/Downloads/";
 
     /** */
     private static final String delim = ",";
@@ -134,10 +134,7 @@ public class PredictionTracer extends GenTest {
                 .andThen(new AddLeaders(0.2))
                 .andThen(new BasicStatsCounter())/*.andThen(new LearningRateAdjuster())*/,
             0.02,
-            map -> map.get(0).get2().tick() > maxTicks
-            new AddLeaders(0.2).andThen(new LearningRateAdjuster())/*.andThen(new LearningRateAdjuster())*/,
-            0.02
-        );
+            map -> map.get(0).get2().tick() > maxTicks);
 
         @SuppressWarnings("unchecked")
         EncogMethodWrapper mdl = new GATrainer(ignite).train(input);

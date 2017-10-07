@@ -16,6 +16,7 @@ import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
 import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
+import org.apache.ignite.ml.encog.metaoptimizers.BasicStatsCounter;
 import org.apache.ignite.ml.encog.metaoptimizers.LearningRateAdjuster;
 import org.apache.ignite.ml.encog.wav.WavReader;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -25,11 +26,17 @@ import org.encog.neural.networks.training.TrainingSetScore;
 import org.jetbrains.annotations.NotNull;
 
 public class WavGAExample {
+    private static int HISTORY_DEPTH_LOG_DEFAULT = 6;
+    private static int MAX_TICKS_DEFAULT = 40;
+    private static int FRAMES_IN_BATCH_DEFAULT = 2;
 
     public static void main(String[] args){
-        int histDepth = 240;
+        int histDepthLog = HISTORY_DEPTH_LOG_DEFAULT;
+        int maxTicks = MAX_TICKS_DEFAULT;
+        int framesInBatch = FRAMES_IN_BATCH_DEFAULT;
+        int histDepth = (int)Math.pow(2, histDepthLog);
+
         String trainingSample = "~/wav/sample.4";
-        int framesInBatch = 50;
         String dataSample = "~/wav/sample.4";
 
         String igniteConfigPath = "examples/config/example-ml-nn.xml";
@@ -40,10 +47,12 @@ public class WavGAExample {
             // parse the command line arguments
             CommandLine line = parser.parse( buildOptions(), args );
 
-            if (line.hasOption("depth"))
-                histDepth = Integer.parseInt(line.getOptionValue("depth"));
+            if (line.hasOption("depth_log"))
+                histDepthLog = Integer.parseInt(line.getOptionValue("depth"));
             if (line.hasOption("fib"))
                 framesInBatch = Integer.parseInt(line.getOptionValue("fib"));
+            if (line.hasOption("max_ticks"))
+                histDepthLog = Integer.parseInt(line.getOptionValue("max_ticks"));
 
             trainingSample = line.getOptionValue("tr_samples");
             dataSample = line.getOptionValue("data_samples");
@@ -60,18 +69,14 @@ public class WavGAExample {
         Estimator estimator = new Estimator();
 
         try (Ignite ignite = Ignition.start(igniteConfigPath)) {
-
-
             System.out.println("Reading wav...");
             List<double[]> rawData = WavReader.read(trainingSample, framesInBatch);
             System.out.println("Done.");
 
-
-
             int maxSamples = Integer.MAX_VALUE;
             CacheUtils.loadIntoCache(rawData, histDepth, maxSamples, CacheUtils.CACHE_NAME, ignite);
 
-            IgniteFunction<Integer, IgniteNetwork> fact = getNNFactory(histDepth);
+            IgniteFunction<Integer, IgniteNetwork> fact = getNNFactory(histDepthLog);
 
             List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
                 new NodeCrossover(0.2, "nc"),
@@ -82,6 +87,7 @@ public class WavGAExample {
             );
 
             int datasetSize = Math.min(maxSamples, rawData.size() - histDepth - 1);
+
             System.out.println("DS size " + datasetSize);
             GaTrainerCacheInput input = new GaTrainerCacheInput<>(CacheUtils.CACHE_NAME,
                 fact,
@@ -91,8 +97,11 @@ public class WavGAExample {
                 30,
                 (in, ign) -> new TrainingSetScore(in.mlDataSet(ign)),
                 3,
-                new AddLeaders(0.2).andThen(new LearningRateAdjuster()),
-                0.2
+                new AddLeaders(0.2)
+                    .andThen(new LearningRateAdjuster(null, 3))
+                    .andThen(new BasicStatsCounter()),
+                0.2,
+                m -> m.get(0).get2().tick() > maxTicks
             );
 
             EncogMethodWrapper mdl = new GATrainer(ignite).train(input);
@@ -113,9 +122,9 @@ public class WavGAExample {
         Option.Builder builder = Option.builder();
 
         Option histDepthOpt = builder.argName("depth").longOpt("depth").hasArg()
-            .desc("depth of history for prediction, default is 240").required(false).type(Integer.TYPE).build();
+            .desc("log base 2 of depth of history for prediction, default is " + HISTORY_DEPTH_LOG_DEFAULT).required(false).type(Integer.TYPE).build();
         Option framesInBatchOpt = builder.argName("fib").longOpt("fib").hasArg()
-            .desc("number of wav frames in batch, default is 50").required(false).type(Integer.TYPE).build();
+            .desc("number of wav frames in batch, default is " + FRAMES_IN_BATCH_DEFAULT).required(false).type(Integer.TYPE).build();
 
         Option trainingSamplesOpt = builder.argName("tr_samples").longOpt("tr_samples").required()
             .desc("path to sample").hasArgs().build();

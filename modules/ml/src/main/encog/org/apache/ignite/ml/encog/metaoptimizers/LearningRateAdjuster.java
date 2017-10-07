@@ -19,6 +19,7 @@ package org.apache.ignite.ml.encog.metaoptimizers;
 
 import java.io.Serializable;
 import java.util.Map;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.statistics.Variance;
 import org.encog.ml.ea.population.Population;
 import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
@@ -29,12 +30,23 @@ import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 public class LearningRateAdjuster implements Metaoptimizer<LearningRateAdjuster.LearningRateStats, LearningRateAdjuster.LearningRateStats> {
     private int maxGlobalTicks;
 
+    private IgniteFunction<Integer, Double> learningRateProvider;
+    private int subPopulations;
+
+    public LearningRateAdjuster(
+        IgniteFunction<Integer, Double> learningRateProvider, int subPopulations) {
+        this.learningRateProvider = learningRateProvider;
+        this.subPopulations = subPopulations;
+    }
+
     public static class LearningRateStats implements Serializable {
         Variance scoresVar;
         Double learningRate;
+        Double weightedAverageLearningRate;
 
         public LearningRateStats(Double learningRate) {
             this.learningRate = learningRate;
+            this.
             scoresVar = new Variance();
         }
 

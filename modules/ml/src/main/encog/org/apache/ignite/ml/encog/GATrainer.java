@@ -37,6 +37,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
 import org.apache.ignite.ml.encog.caches.InputCache;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
@@ -59,7 +60,7 @@ import org.jetbrains.annotations.NotNull;
  * Implementation of group trainer using genetic algorithm.
  */
 public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData, double[], GATrainerInput<? extends MLMethod, S, U>, EncogMethodWrapper> {
-    private static final int MAX_ITERATION = 60;
+    private static final int MAX_ITERATION = 40;
     public static String CACHE = "encog_nets";
 
     private Ignite ignite;
@@ -88,7 +89,7 @@ public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData
         Map<Integer, S> stats = bcast.stream().reduce(new HashMap<>(), (m1, m2) -> MapUtil.mergeMaps(m1, m2, (o1, o2) -> o1, HashMap::new));
         Map<Integer, U> aggregatedStats = input.metaoptimizer().statsAggregator(stats);
 
-        while (!isCompleted()) {
+        while (!input.shouldStop(aggregatedStats)) {
             Instant start = Instant.now();
 
             GroupTrainerTask<S, U> task = new GroupTrainerTask<>(input.metaoptimizer()::statsAggregator, aggregatedStats);

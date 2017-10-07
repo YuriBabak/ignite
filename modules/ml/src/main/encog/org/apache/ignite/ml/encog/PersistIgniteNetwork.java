@@ -17,22 +17,10 @@
 
 package org.apache.ignite.ml.encog;
 
-import org.apache.ignite.ml.Model;
-import org.encog.ml.MLRegression;
-import org.encog.ml.data.MLData;
+import org.encog.neural.networks.PersistBasicNetwork;
 
-public class EncogMethodWrapper implements Model<MLData, double[]> {
-    private MLRegression m;
-
-    public MLRegression getM() {
-        return m;
-    }
-
-    public EncogMethodWrapper(MLRegression m) {
-        this.m = m;
-    }
-
-    @Override public double[] predict(MLData val) {
-        return m.compute(val).getData();
+public class PersistIgniteNetwork extends PersistBasicNetwork {
+    @Override public String getPersistClassString() {
+        return "IgniteNetwork";
     }
 }

@@ -23,19 +23,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
-import org.apache.ignite.ml.encog.evolution.operators.CrossoverFeatures;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
 import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
-import org.apache.ignite.ml.encog.evolution.operators.WeightCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
+import org.apache.ignite.ml.encog.metaoptimizers.BasicStatsCounter;
 import org.apache.ignite.ml.encog.metaoptimizers.LearningRateAdjuster;
 import org.apache.ignite.ml.encog.metaoptimizers.TopologyChanger;
 import org.apache.ignite.ml.encog.util.Util;
@@ -49,6 +49,7 @@ import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.basic.BasicMLData;
 import org.encog.ml.data.basic.BasicMLDataPair;
+import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.TrainingSetScore;
 
@@ -108,16 +109,19 @@ public class WavTest extends GridCommonAbstractTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         int framesInBatch = 2;
+        int sampleToRead = 4;
+        int rate = 11000;
 
         System.out.println("Reading wav...");
-        List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample4.wav", framesInBatch);
+        List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample" + sampleToRead + "_rate" + rate + ".wav", framesInBatch);
         System.out.println("Done.");
 
-        int pow = 4;
+        int pow = 6;
+        int lookForwardFor = 1;
         int histDepth = (int)Math.pow(2, pow);
 
-        int maxSamples = 2_000_000;
-        loadIntoCache(rawData, histDepth, maxSamples);
+        int maxSamples = 1_000_000;
+        loadIntoCache(rawData, histDepth, maxSamples, lookForwardFor);
 
         int n = 50;
         int k = 49;
@@ -133,10 +137,12 @@ public class WavTest extends GridCommonAbstractTest {
 //
 //
 //            res.reset();
-            return buildTreeLikeNet(pow);
+            return buildTreeLikeNetComplex(pow, lookForwardFor);
         };
+
+        IgniteFunction<Integer, TreeNetwork> fact1 = i -> new TreeNetwork(pow + 1);
 //
-        double lr = 0.5;
+        double lr = 0.1;
         List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
             new NodeCrossover(0.2, "nc"),
 //            new CrossoverFeatures(0.2, "cf"),
@@ -160,6 +166,8 @@ public class WavTest extends GridCommonAbstractTest {
         };
         int datasetSize = Math.min(maxSamples, rawData.size() - histDepth - 1);
         System.out.println("DS size " + datasetSize);
+        Integer maxTicks = 40;
+
         GaTrainerCacheInput input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
             datasetSize,
@@ -168,13 +176,23 @@ public class WavTest extends GridCommonAbstractTest {
             30,
             (in, ignite) -> new TrainingSetScore(in.mlDataSet(ignite)),
             3,
-            new AddLeaders(0.2).andThen(new LearningRateAdjuster())/*.andThen(new LearningRateAdjuster())*/,
-            0.02
+            new AddLeaders(0.2)
+                .andThen(new LearningRateAdjuster(null, 3))
+                .andThen(new BasicStatsCounter())
+            /*.andThen(new LearningRateAdjuster())*/
+            ,
+            0.02,
+            metaoptimizerData -> metaoptimizerData.get(0).get2().tick() > maxTicks
         );
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);
+
+//        PersistorRegistry.getInstance().add(new PersistIgniteNetwork());
+//        EncogDirectoryPersistence.saveObject(new File(WAV_LOCAL + "net_" + sampleToRead + ".nn"), model.getM());
 //
-        calculateError(model, histDepth);
+        calculateError(model, rate, sampleToRead, histDepth, framesInBatch);
+
+        System.out.println(NeuralNetworkUtils.printBinaryNetwork((BasicNetwork)model.getM()));
     }
 
     /**
@@ -183,42 +201,54 @@ public class WavTest extends GridCommonAbstractTest {
      * @param wav Wav.
      * @param historyDepth History depth.
      */
-    private void loadIntoCache(List<double[]> wav, int historyDepth, int maxSamples) {
+    private void loadIntoCache(List<double[]> wav, int historyDepth, int maxSamples, int lookForwardAt) {
         TestTrainingSetCache.getOrCreate(ignite);
+
+        double msd = 0.0;
+        double prev = 0.0;
 
         try (IgniteDataStreamer<Integer, MLDataPair> stmr = ignite.dataStreamer(TestTrainingSetCache.NAME)) {
             // Stream entries.
 
             int samplesCnt = wav.size();
             System.out.println("Loading " + samplesCnt + " samples into cache...");
-            for (int i = historyDepth; i < samplesCnt - 1 && (i - historyDepth) < maxSamples; i++){
+            for (int i = historyDepth; i < samplesCnt - 1 && (i - historyDepth) < maxSamples; i++) {
 
                 // The mean is calculated inefficient
                 BasicMLData dataSetEntry = new BasicMLData(wav.subList(i - historyDepth, i).stream().map(doubles ->
                     (Arrays.stream(doubles).sum() / doubles.length + 1) / 2).mapToDouble(d -> d).toArray());
 
-                double[] rawLable = wav.get(i + 1);
-                double[] lable = {(Arrays.stream(rawLable).sum() / rawLable.length + 1) / 2};
+                double[] lable = wav.subList(i + 1, i + 1 + lookForwardAt).stream().map(doubles ->
+                    (Arrays.stream(doubles).sum() / doubles.length + 1) / 2).mapToDouble(d -> d).toArray();
+
+//                double[] lable = {(Arrays.stream(rawLable).sum() / rawLable.length + 1) / 2};
 
                 stmr.addData(i - historyDepth, new BasicMLDataPair(dataSetEntry, new BasicMLData(lable)));
+
+                if (i % 10_000 == 0)
+                    System.out.println("Lb:" + Arrays.toString(lable));
+
+                if (i > historyDepth)
+                    msd += (lable[0] - prev) * (lable[0] - prev);
+                prev = lable[0];
+
 
                 if (i % 5000 == 0)
                     System.out.println("Loaded " + i);
             }
-            System.out.println("Done");
+            System.out.println("Done, mean squared delta between sequential data is " + msd / Math.min(samplesCnt - historyDepth, maxSamples));
         }
     }
 
-    private void calculateError(EncogMethodWrapper model, int historyDepth ) throws IOException {
-        List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample4.wav", 100);
+    private void calculateError(EncogMethodWrapper model, int rate, int sampleNumber, int historyDepth, int framesInBatch) throws IOException {
+        List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample" + sampleNumber + "_rate" + rate + ".wav", framesInBatch);
 
-        IgniteBiFunction<Model<MLData, double[]>, List<double[]>, Double> errorsPercentage = errorsPercentage(historyDepth);
+        IgniteBiFunction<Model<MLData, double[]>, List<double[]>, Double> errorsPercentage = errorsPercentage(sampleNumber, rate, historyDepth);
         Double accuracy = errorsPercentage.apply(model, rawData);
         System.out.println(">>> Errs estimation: " + accuracy);
     }
 
     private static IgniteNetwork buildTreeLikeNet(int leavesCountLog) {
-
         IgniteNetwork res = new IgniteNetwork();
         for (int i = leavesCountLog; i >=0; i--)
             res.addLayer(new BasicLayer(i == 0 ? null : new ActivationSigmoid(), false, (int)Math.pow(2, i)));
@@ -240,24 +270,73 @@ public class WavTest extends GridCommonAbstractTest {
         return res;
     }
 
-    private IgniteBiFunction<Model<MLData, double[]>, List<double[]>, Double> errorsPercentage(int historyDepth){
+    private static IgniteNetwork buildTreeLikeNetComplex(int leavesCountLog, int lookForwardCnt) {
+        IgniteNetwork res = new IgniteNetwork();
+
+        int lastTreeLike = 0;
+        for (int i = leavesCountLog; i >=0 && Math.pow(2, i) >= (lookForwardCnt / 2); i--) {
+            res.addLayer(new BasicLayer(i == 0 ? null : new ActivationSigmoid(), false, (int)Math.pow(2, i)));
+            lastTreeLike = leavesCountLog - i;
+        }
+
+        res.addLayer(new BasicLayer(new ActivationSigmoid(), false, lookForwardCnt));
+
+        res.getStructure().finalizeStructure();
+
+        for (int i = 0; i < lastTreeLike; i++) {
+            for (int n = 0; n < res.getLayerNeuronCount(i); n += 2) {
+                res.dropOutputsFrom(i, n);
+                res.dropOutputsFrom(i, n + 1);
+
+                res.enableConnection(i, n, n / 2, true);
+                res.enableConnection(i, n + 1, n / 2, true);
+            }
+        }
+
+        res.reset();
+
+        return res;
+    }
+
+    private IgniteBiFunction<Model<MLData, double[]>, List<double[]>, Double> errorsPercentage(int sample, int rate, int historyDepth){
+
         return (model, ds) -> {
+            double buff[] = new double[ds.size() - historyDepth];
+            double genBuff[] = new double[ds.size()];
+
             double cnt = 0L;
 
             int samplesCnt = ds.size();
 
-            for (int i = historyDepth; i < samplesCnt-1; i++){
+            // Sample for generation taken from middle
+            List<Double> inputForGen = ds.subList(samplesCnt / 2, samplesCnt / 2 + historyDepth).stream().map(doubles ->
+                (Arrays.stream(doubles).sum() / doubles.length + 1) / 2).collect(Collectors.toList());
+
+            System.arraycopy(inputForGen.stream().mapToDouble(d -> d).toArray(), 0, genBuff, 0, historyDepth);
+
+            for (int i = historyDepth; i < samplesCnt - 1; i++){
 
                 BasicMLData dataSetEntry = new BasicMLData(ds.subList(i - historyDepth, i).stream().map(doubles ->
                     (Arrays.stream(doubles).sum() / doubles.length + 1) / 2).mapToDouble(d -> d).toArray());
+
+                BasicMLData genDataSetEntry = new BasicMLData(inputForGen.stream().mapToDouble(d -> d).toArray());
 
                 double[] rawLable = ds.get(i + 1);
                 double[] lable = {(Arrays.stream(rawLable).sum() / rawLable.length + 1) / 2};
 
                 double[] predict = model.predict(dataSetEntry);
 
+                buff[i - historyDepth] = predict[0] - 1;
+                double genPred = model.predict(genDataSetEntry)[0] - 1;
+                genBuff[i] = genPred;
+                inputForGen.remove(0);
+                inputForGen.add(historyDepth - 1, genPred);
+
                 cnt += predict[0] * predict[0] - lable[0] * lable[0];
             }
+
+            WavReader.write(WAV_LOCAL + "sample" + sample + "_rate" + rate + "_3.wav", buff);
+            WavReader.write(WAV_LOCAL + "sample" + sample + "_rate" + rate + "_gen.wav", genBuff);
 
             return cnt / samplesCnt;
         };

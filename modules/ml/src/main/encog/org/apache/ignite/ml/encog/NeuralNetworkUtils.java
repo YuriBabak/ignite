@@ -43,6 +43,38 @@ public class NeuralNetworkUtils {
         return res;
     }
 
+    public static int[] toXY(TreeNetwork n, int neuronNumber, boolean isInner) {
+        int[] res = new int[2];
+
+        for (int i = isInner ? 1 : 0; i < n.getLayerCount(); i++) {
+            if (neuronNumber - n.getLayerNeuronCount(i) < 0) {
+                res[0] = i;
+                break;
+            }
+            else
+                neuronNumber -= n.getLayerNeuronCount(i);
+        }
+
+        res[1] = neuronNumber;
+
+        return res;
+    }
+
+    public static String printBinaryNetwork(BasicNetwork nn) {
+        StringBuilder sb = new StringBuilder();
+        for (int l = 0; l < nn.getLayerCount() - 1; l++) {
+            sb.append("\n");
+            for (int n = 0; n < nn.getLayerNeuronCount(l); n += 2) {
+                sb.append("[")
+                    .append(nn.getWeight(l, n, n / 2))
+                    .append(",")
+                    .append(nn.getWeight(l, n + 1, n / 2))
+                    .append("]");
+            }
+        }
+        return sb.toString();
+    }
+
     public static int totalNeuronsCount(BasicNetwork n) {
         int res = 0;
 
@@ -54,5 +86,9 @@ public class NeuralNetworkUtils {
 
     public static int innerNeuronsCount(BasicNetwork n) {
         return totalNeuronsCount(n) - n.getLayerNeuronCount(0) - n.getLayerNeuronCount(n.getLayerCount() - 1);
+    }
+
+    public static int innerNeuronsCount(TreeNetwork n) {
+        return ((int)Math.pow(2, n.depth) - 1) - n.getLayerNeuronCount(0) - n.getLayerNeuronCount(n.getLayerCount() - 1);
     }
 }

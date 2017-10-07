@@ -39,6 +39,7 @@ public class WavReader {
 
         try {
             WavFile wavFile = WavFile.openWavFile(new File(path));
+            System.out.println("");wavFile.getValidBits();
 
             wavFile.display();
 
@@ -60,6 +61,20 @@ public class WavReader {
         }
 
         return batchs;
+    }
+
+    public static void write(String path, double[] res){
+        List<double[]> batchs = new ArrayList<>();
+
+        try {
+            WavFile wavFile = WavFile.newWavFile(new File(path), 1, res.length, 16, 44100);
+            wavFile.writeFrames(res, 0, res.length);
+
+            wavFile.close();
+        }
+        catch (IOException | WavFileException e) {
+            throw new IgniteException("Failed to read file: " + path, e);
+        }
     }
 
 }

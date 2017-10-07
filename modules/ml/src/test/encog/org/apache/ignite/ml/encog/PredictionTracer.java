@@ -40,6 +40,7 @@ import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
 import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightCrossover;
 import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
+import org.apache.ignite.ml.encog.metaoptimizers.BasicStatsCounter;
 import org.apache.ignite.ml.encog.metaoptimizers.TopologyChanger;
 import org.apache.ignite.ml.encog.util.Util;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -103,6 +104,7 @@ public class PredictionTracer extends GenTest {
 
             return new TopologyChanger.Topology(locks);
         };
+        int maxTicks = 40;
         GaTrainerCacheInput input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
             mnist.getFst().length,
@@ -111,8 +113,11 @@ public class PredictionTracer extends GenTest {
             30,
             (in, ignite) -> new TrainingSetScore(in.mlDataSet(ignite)),
             3,
-            new TopologyChanger(topSupplier).andThen(new AddLeaders(0.2))/*.andThen(new LearningRateAdjuster())*/,
-            0.02
+            new TopologyChanger(topSupplier)
+                .andThen(new AddLeaders(0.2))
+                .andThen(new BasicStatsCounter())/*.andThen(new LearningRateAdjuster())*/,
+            0.02,
+            map -> map.get(0).get2().tick() > maxTicks
         );
 
         @SuppressWarnings("unchecked")

@@ -19,6 +19,7 @@ package org.apache.ignite.ml.encog;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.metaoptimizers.Metaoptimizer;
@@ -85,4 +86,6 @@ public interface GATrainerInput<T extends MLMethod & MLEncodable, S, U extends S
      * Get metaoptimizer.
      */
     Metaoptimizer<S, U> metaoptimizer();
+
+    boolean shouldStop(Map<Integer, U> data);
 }

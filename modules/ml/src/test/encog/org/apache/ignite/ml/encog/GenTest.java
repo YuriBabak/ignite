@@ -35,6 +35,7 @@ import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
 import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
 import org.apache.ignite.ml.encog.evolution.operators.WeightCrossover;
 import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
+import org.apache.ignite.ml.encog.metaoptimizers.BasicStatsCounter;
 import org.apache.ignite.ml.encog.metaoptimizers.TopologyChanger;
 import org.apache.ignite.ml.encog.util.Util;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -144,6 +145,7 @@ new CrossoverFeatures(0.1, "cf"),
 
             return new TopologyChanger.Topology(locks);
         };
+        Integer maxTicks = 40;
         GaTrainerCacheInput input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
             mnist.getFst().length,
@@ -154,9 +156,11 @@ new CrossoverFeatures(0.1, "cf"),
             3,
             new AddLeaders(0.2)
             .andThen(new TopologyChanger(topologySupplier))
+            .andThen(new BasicStatsCounter())
 //                .andThen(new LearningRateAdjuster())
             ,
-            0.02
+            0.02,
+            map -> map.get(0).get2().tick() > maxTicks
         );
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);

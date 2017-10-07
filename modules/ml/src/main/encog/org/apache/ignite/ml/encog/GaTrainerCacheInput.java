@@ -20,11 +20,13 @@ package org.apache.ignite.ml.encog;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.metaoptimizers.Metaoptimizer;
 import org.apache.ignite.ml.encog.util.Util;
@@ -41,6 +43,7 @@ import org.encog.ml.data.basic.BasicMLDataSet;
 public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends Serializable> implements GATrainerInput<T, S, U> {
     private final IgniteBiFunction<GATrainerInput, Ignite, CalculateScore> scoreCalculatorSupplier;
     private final int speciesCount;
+    private final IgnitePredicate<Map<Integer, U>> stopCriterion;
     private IgniteFunction<Integer, T> mf;
     private String cacheName;
     private int size;
@@ -72,7 +75,8 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
         IgniteBiFunction<GATrainerInput, Ignite, CalculateScore> scoreCalculator,
         int speciesCount,
         Metaoptimizer<S, U> metaoptimizer,
-        double batchPercentage) {
+        double batchPercentage,
+        IgnitePredicate<Map<Integer, U>> stopCriterion) {
         this.cacheName = cacheName;
         mf = mtdFactory;
         this.size = size;
@@ -83,6 +87,7 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
         this.speciesCount = speciesCount;
         this.metaoptimizer = metaoptimizer;
         this.batchPercentage = batchPercentage;
+        this.stopCriterion = stopCriterion;
     }
 
     @Override public MLDataSet mlDataSet(Ignite ignite) {
@@ -141,5 +146,9 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
 
     @Override public Metaoptimizer<S, U> metaoptimizer() {
         return metaoptimizer;
+    }
+
+    @Override public boolean shouldStop(Map<Integer, U> data) {
+        return stopCriterion.apply(data);
     }
 }

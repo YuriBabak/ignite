@@ -32,6 +32,8 @@ public class WavGAExample {
         int framesInBatch = 50;
         String dataSample = "~/wav/sample.4";
 
+        String igniteConfigPath = "examples/config/example-ml-nn.xml";
+
         CommandLineParser parser = new DefaultParser();
 
         try {
@@ -46,6 +48,9 @@ public class WavGAExample {
             trainingSample = line.getOptionValue("tr_samples");
             dataSample = line.getOptionValue("data_samples");
 
+            if (line.hasOption("cfg"))
+                igniteConfigPath = line.getOptionValue("cfg");
+
         }
         catch (ParseException e) {
             e.printStackTrace();
@@ -54,7 +59,7 @@ public class WavGAExample {
 
         Estimator estimator = new Estimator();
 
-        try (Ignite ignite = Ignition.start("examples/config/example-ml-nn.xml")) {
+        try (Ignite ignite = Ignition.start(igniteConfigPath)) {
 
 
             System.out.println("Reading wav...");
@@ -108,19 +113,23 @@ public class WavGAExample {
         Option.Builder builder = Option.builder();
 
         Option histDepthOpt = builder.argName("depth").longOpt("depth").hasArg()
-            .desc("depth of history for prediction, default is 240").optionalArg(true).type(Integer.TYPE).build();
+            .desc("depth of history for prediction, default is 240").required(false).type(Integer.TYPE).build();
         Option framesInBatchOpt = builder.argName("fib").longOpt("fib").hasArg()
-            .desc("number of wav frames in batch, default is 50").optionalArg(true).type(Integer.TYPE).build();
+            .desc("number of wav frames in batch, default is 50").required(false).type(Integer.TYPE).build();
 
         Option trainingSamplesOpt = builder.argName("tr_samples").longOpt("tr_samples").required()
             .desc("path to sample").hasArgs().build();
         Option trainingDataSampleOpt = builder.argName("data_samples").longOpt("data_samples").required()
             .desc("path to data samples, uses for accuracy estimation").hasArg().build();
 
+        Option igniteConfOpt = builder.argName("cfg").longOpt("cfg").required(false)
+            .desc("path to ignite config, default is examples/config/example-ml-nn.xml").build();
+
         options.addOption(histDepthOpt);
         options.addOption(framesInBatchOpt);
         options.addOption(trainingSamplesOpt);
         options.addOption(trainingDataSampleOpt);
+        options.addOption(igniteConfOpt);
 
         return options;
     }

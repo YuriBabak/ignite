@@ -104,6 +104,7 @@
         <lgpl.test.folder>src/test/java</lgpl.test.folder>
         <java8.test.folder>src/test/java</java8.test.folder>
         <ml.folder>src/main/java</ml.folder>
+        <ml.nn.folder>src/main/java</ml.nn.folder>
     </properties>
 
     <profiles>
@@ -240,6 +241,34 @@
             <properties>
                 <ml.folder>src/main/ml</ml.folder>
                 <java.ver>1.8</java.ver>
+                <encog.version>3.3.0</encog.version>
+            </properties>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-ml</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.encog</groupId>
+                    <artifactId>encog-core</artifactId>
+                    <version>${encog.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>commons-cli</groupId>
+                    <artifactId>commons-cli</artifactId>
+                    <version>1.4</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>encog-integration</id>
+
+            <properties>
+                <ml.nn.folder>src/main/ml-encog</ml.nn.folder>
+                <java.ver>1.8</java.ver>
             </properties>
 
             <dependencies>
@@ -311,6 +340,7 @@
                                 <source>${java8.folder}</source>
                                 <source>${spark.folder}</source>
                                 <source>${ml.folder}</source>
+                                <source>${ml.nn.folder}</source>
                             </sources>
                         </configuration>
                     </execution>

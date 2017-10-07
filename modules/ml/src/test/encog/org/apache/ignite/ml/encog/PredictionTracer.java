@@ -38,13 +38,16 @@ import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
 import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
-import org.apache.ignite.ml.encog.evolution.operators.WeightCrossover;
+import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
 import org.apache.ignite.ml.encog.metaoptimizers.BasicStatsCounter;
+import org.apache.ignite.ml.encog.metaoptimizers.LearningRateAdjuster;
 import org.apache.ignite.ml.encog.metaoptimizers.TopologyChanger;
 import org.apache.ignite.ml.encog.util.Util;
+import org.apache.ignite.ml.encog.wav.WavReader;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.encog.engine.network.activation.ActivationSigmoid;
 import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.basic.BasicMLData;
@@ -63,51 +66,65 @@ public class PredictionTracer extends GenTest {
     /** */
     public void testPrediction() throws IOException {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        System.out.println("Reading mnist...");
-        MnistUtils.Pair<double[][], double[][]> mnist = MnistUtils.mnist(MNIST_LOCATION + "train-images-idx3-ubyte", MNIST_LOCATION + "train-labels-idx1-ubyte", new Random(), 60_000);
-//        MnistUtils.Pair<double[][], double[][]> mnist = MnistUtils.mnist(MNIST_LOCATION + "t10k-images-idx3-ubyte", MNIST_LOCATION + "t10k-labels-idx1-ubyte", new Random(), 10_000);
 
+        int framesInBatch = 2;
+
+        System.out.println("Reading wav...");
+        List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample4.wav", framesInBatch);
         System.out.println("Done.");
 
-        System.out.println("Loading MNIST into test cache...");
-        loadIntoCache(mnist);
-        System.out.println("Done.");
+        int pow = 4;
+        int histDepth = (int)Math.pow(2, pow);
 
-        // create training data
+        int maxSamples = 2_000_000;
+        loadIntoCache(rawData, histDepth, maxSamples);
+
         int n = 50;
         int k = 49;
 
         IgniteFunction<Integer, IgniteNetwork> fact = i -> {
-            IgniteNetwork res = new IgniteNetwork();
-            res.addLayer(new BasicLayer(null,false,28 * 28));
-            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,n));
-            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSoftMax(),false,10));
-            res.getStructure().finalizeStructure();
-
-            res.reset();
-            return res;
+//            IgniteNetwork res = new IgniteNetwork();
+//            res.addLayer(new BasicLayer(null,false, histDepth));
+//            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,n));
+//            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,n));
+//            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,n));
+//            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSoftMax(),false,1));
+//            res.getStructure().finalizeStructure();
+//
+//
+//            res.reset();
+            return buildTreeLikeNet(pow);
         };
-
+//
+        double lr = 0.5;
         List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
             new NodeCrossover(0.2, "nc"),
-            new WeightCrossover(0.2, "wc"),
-//            new WeightMutation(0.2, 0.05, "wm"),
-            new MutateNodes(10, 0.2, 0.05, "mn"));
-
-        IgniteFunction<Integer, TopologyChanger.Topology> topSupplier = (IgniteFunction<Integer, TopologyChanger.Topology>)subPop -> {
+//            new CrossoverFeatures(0.2, "cf"),
+//            new WeightCrossover(0.2, "wc"),
+            new WeightMutation(0.2, lr, "wm"),
+            new MutateNodes(10, 0.2, lr, "mn")
+        );
+//
+        IgniteFunction<Integer, TopologyChanger.Topology> topSupplier =
+            (IgniteFunction<Integer, TopologyChanger.Topology>)subPop -> {
             Map<LockKey, Double> locks = new HashMap<>();
+            int toDropCnt = Math.abs(new Random().nextInt()) % k;
 
             int[] toDrop = Util.selectKDistinct(n, Math.abs(new Random().nextInt()) % k);
 
             for (int neuron : toDrop)
                 locks.put(new LockKey(1, neuron), 0.0);
 
+            System.out.println("For population " + subPop + " we dropped " + toDropCnt);
+
             return new TopologyChanger.Topology(locks);
         };
         int maxTicks = 40;
+        int datasetSize = Math.min(maxSamples, rawData.size() - histDepth - 1);
+        System.out.println("DS size " + datasetSize);
         GaTrainerCacheInput input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
-            mnist.getFst().length,
+            datasetSize,
             60,
             evoOps,
             30,
@@ -118,45 +135,110 @@ public class PredictionTracer extends GenTest {
                 .andThen(new BasicStatsCounter())/*.andThen(new LearningRateAdjuster())*/,
             0.02,
             map -> map.get(0).get2().tick() > maxTicks
+            new AddLeaders(0.2).andThen(new LearningRateAdjuster())/*.andThen(new LearningRateAdjuster())*/,
+            0.02
         );
 
         @SuppressWarnings("unchecked")
         EncogMethodWrapper mdl = new GATrainer(ignite).train(input);
 
-        calculateError(mdl);
+        calculateError(mdl, histDepth);
     }
 
-    /** */
-    private void loadIntoCache(MnistUtils.Pair<double[][], double[][]> mnist) {
+    /**
+     * Load wav into cache.
+     *
+     * @param wav Wav.
+     * @param histDepth History depth.
+     */
+    private void loadIntoCache(List<double[]> wav, int histDepth, int maxSamples) {
         TestTrainingSetCache.getOrCreate(ignite);
 
         try (IgniteDataStreamer<Integer, MLDataPair> stmr = ignite.dataStreamer(TestTrainingSetCache.NAME)) {
             // Stream entries.
 
-            int samplesCnt = mnist.getFst().length;
+            int samplesCnt = wav.size();
             System.out.println("Loading " + samplesCnt + " samples into cache...");
-            for (int i = 0; i < samplesCnt; i++)
-                stmr.addData(i, new BasicMLDataPair(new BasicMLData(mnist.fst[i]), new BasicMLData(mnist.snd[i])));
+            for (int i = histDepth; i < samplesCnt - 1 && (i - histDepth) < maxSamples; i++){
+
+                // The mean is calculated inefficient
+                BasicMLData dataSetEntry = new BasicMLData(wav.subList(i - histDepth, i).stream().map(doubles ->
+                    (Arrays.stream(doubles).sum() / doubles.length + 1) / 2).mapToDouble(d -> d).toArray());
+
+                double[] rawLb = wav.get(i + 1);
+                double[] lb = {(Arrays.stream(rawLb).sum() / rawLb.length + 1) / 2};
+
+                stmr.addData(i - histDepth, new BasicMLDataPair(dataSetEntry, new BasicMLData(lb)));
+
+                if (i % 5000 == 0)
+                    System.out.println("Loaded " + i);
+            }
+            System.out.println("Done");
         }
     }
 
     /** */
-    private void calculateError(EncogMethodWrapper mdl) throws IOException {
-        MnistUtils.Pair<double[][], double[][]> testMnistData = MnistUtils.mnist(
-            MNIST_LOCATION + "t10k-images-idx3-ubyte", MNIST_LOCATION + "t10k-labels-idx1-ubyte",
-            new Random(), 10_000);
+    private void calculateError(EncogMethodWrapper mdl, int histDepth) throws IOException {
+        List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample4.wav", 100);
 
         ResultsWriter writer = new ResultsWriter();
 
         writeHeader(writer);
 
-        IgniteBiFunction<Model<MLData, double[]>, MnistUtils.Pair<double[][], double[][]>, Double> errorsPercentage
-            = errorsPercentage(writer::append);
-
-        Double accuracy = errorsPercentage.apply(mdl, testMnistData);
-
-        System.out.println(">>> Errs percentage: " + accuracy);
+        IgniteBiFunction<Model<MLData, double[]>, List<double[]>, Double> errorsPercentage = errorsPercentage(histDepth,
+            writer::append);
+        Double accuracy = errorsPercentage.apply(mdl, rawData);
+        System.out.println(">>> Errs estimation: " + accuracy);
         System.out.println(">>> Tracing data saved: " + writer);
+    }
+
+    /** */
+    private static IgniteNetwork buildTreeLikeNet(int leavesCntLog) {
+
+        IgniteNetwork res = new IgniteNetwork();
+        for (int i = leavesCntLog; i >=0; i--)
+            res.addLayer(new BasicLayer(i == 0 ? null : new ActivationSigmoid(), false, (int)Math.pow(2, i)));
+
+        res.getStructure().finalizeStructure();
+
+        for (int i = 0; i < leavesCntLog - 1; i++) {
+            for (int n = 0; n < res.getLayerNeuronCount(i); n += 2) {
+                res.dropOutputsFrom(i, n);
+                res.dropOutputsFrom(i, n + 1);
+
+                res.enableConnection(i, n, n / 2, true);
+                res.enableConnection(i, n + 1, n / 2, true);
+            }
+        }
+
+        res.reset();
+
+        return res;
+    }
+
+    /** */
+    private IgniteBiFunction<Model<MLData, double[]>, List<double[]>, Double> errorsPercentage(int histDepth,
+        Consumer<String> writer){
+        return (model, ds) -> {
+            double cnt = 0L;
+
+            int samplesCnt = ds.size();
+
+            for (int i = histDepth; i < samplesCnt-1; i++){
+
+                BasicMLData dataSetEntry = new BasicMLData(ds.subList(i - histDepth, i).stream().map(doubles ->
+                    (Arrays.stream(doubles).sum() / doubles.length + 1) / 2).mapToDouble(d -> d).toArray());
+
+                double[] rawLb = ds.get(i + 1);
+                double[] lb = {(Arrays.stream(rawLb).sum() / rawLb.length + 1) / 2};
+
+                double[] predict = model.predict(dataSetEntry);
+
+                cnt += verifyPrediction(lb[0], predict[0], i, writer);
+            }
+
+            return cnt / samplesCnt;
+        };
     }
 
     /** */
@@ -165,40 +247,10 @@ public class PredictionTracer extends GenTest {
     }
 
     /** */
-    private IgniteBiFunction<Model<MLData, double[]>, MnistUtils.Pair<double[][],double[][]>, Double> errorsPercentage(
-        Consumer<String> writer) {
-        return (model, pair) -> {
+    private double verifyPrediction(double exp, double predict, int idx, Consumer<String> writer) {
+        writer.accept(formatResults(idx, exp, predict));
 
-            double[][] k = pair.getFst();
-            double[][] v = pair.getSnd();
-
-            assert k.length == v.length;
-
-            long total = 0L;
-            long cnt = 0L;
-            for (int i = 0; i < k.length; i++) {
-                total++;
-
-                double[] predict = model.predict(new BasicMLData(k[i]));
-                if (i % 100 == 0)
-                    System.out.println(Arrays.toString(predict));
-
-                if(verifyPrediction(v[i], predict, i, writer))
-                    cnt++;
-            }
-
-            return 1 - (double)cnt / total;
-        };
-    }
-
-    /** */
-    private boolean verifyPrediction(double[] exp, double[] predict, int idx, Consumer<String> writer) {
-        int predictedDigit = toDigit(predict);
-        int idealDigit = toDigit(exp);
-
-        writer.accept(formatResults(idx, idealDigit, predictedDigit));
-
-        return predictedDigit == idealDigit;
+        return predict * predict - exp * exp;
     }
 
     /** */

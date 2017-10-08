@@ -152,7 +152,7 @@ new CrossoverFeatures(0.1, "cf"),
             60,
             evoOps,
             30,
-            (in, ignite) -> new TrainingSetScore(in.mlDataSet(ignite)),
+            (in, ignite) -> new TrainingSetScore(in.mlDataSet(0, ignite)),
             3,
             new AddLeaders(0.2)
             .andThen(new TopologyChanger(topologySupplier))

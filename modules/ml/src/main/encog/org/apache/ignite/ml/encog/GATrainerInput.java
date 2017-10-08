@@ -39,9 +39,10 @@ import org.encog.ml.data.MLDataSet;
 public interface GATrainerInput<T extends MLMethod & MLEncodable, S, U extends Serializable> {
     /**
      * Returns dataset which is used as a training set on each of trainer nodes.
+     * @param i number of subpopulation
      * @return Dataset which is used as a training set on each of trainer nodes.
      */
-    MLDataSet mlDataSet(Ignite ignite);
+    MLDataSet mlDataSet(int i, Ignite ignite);
 
     /**
      * Get nets factory.

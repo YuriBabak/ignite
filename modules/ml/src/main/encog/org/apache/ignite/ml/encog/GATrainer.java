@@ -126,7 +126,7 @@ public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData
 
         IgniteCache<UUID, GATrainerInput> cache = InputCache.getOrCreate(ignite);
         GATrainerInput<?, S, U> input = cache.get(trainingUUID);
-        MLDataSet trainingSet = input.mlDataSet(ignite);
+        MLDataSet trainingSet = input.mlDataSet(0, ignite);
 
         TrainingSetScore score = new TrainingSetScore(trainingSet);
         List<IgniteEvolutionaryOperator> evoOps = input.evolutionaryOperators();

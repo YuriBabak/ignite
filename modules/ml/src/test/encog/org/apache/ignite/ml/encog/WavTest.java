@@ -174,7 +174,8 @@ public class WavTest extends GridCommonAbstractTest {
             60,
             evoOps,
             30,
-            (in, ignite) -> new TrainingSetScore(in.mlDataSet(ignite)),
+            // TODO: for the moment each population gets the same dataset, can be tweaked
+            (in, ignite) -> new TrainingSetScore(in.mlDataSet(0, ignite)),
             3,
             new AddLeaders(0.2)
                 .andThen(new LearningRateAdjuster(null, 3))

@@ -34,6 +34,7 @@ public class WavGAExample {
         int histDepthLog = HISTORY_DEPTH_LOG_DEFAULT;
         int maxTicks = MAX_TICKS_DEFAULT;
         int framesInBatch = FRAMES_IN_BATCH_DEFAULT;
+
         int histDepth = (int)Math.pow(2, histDepthLog);
 
         String trainingSample = "~/wav/sample.4";
@@ -147,7 +148,7 @@ public class WavGAExample {
     @NotNull private static IgniteFunction<Integer, IgniteNetwork> getNNFactory(int leavesCountLog) {
         return subPopulation -> {
             IgniteNetwork res = new IgniteNetwork();
-            for (int i = leavesCountLog; i >=0; i--)
+            for (int i = leavesCountLog; i >= 0; i--)
                 res.addLayer(new BasicLayer(i == 0 ? null : new ActivationSigmoid(), false, (int)Math.pow(2, i)));
 
             res.getStructure().finalizeStructure();

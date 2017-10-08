@@ -127,7 +127,7 @@ public class PredictionTracer extends GenTest {
             60,
             evoOps,
             30,
-            (in, ignite) -> new TrainingSetScore(in.mlDataSet(ignite)),
+            (in, ignite) -> new TrainingSetScore(in.mlDataSet(0, ignite)),
             3,
             new TopologyChanger(topSupplier)
                 .andThen(new AddLeaders(0.2))

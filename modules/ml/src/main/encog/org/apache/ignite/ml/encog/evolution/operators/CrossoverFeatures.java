@@ -45,7 +45,7 @@ public class CrossoverFeatures extends IgniteEvolutionaryOperator {
 
     @Override public void init(EvolutionaryAlgorithm theOwner) {
         super.init(theOwner);
-        ds = input().mlDataSet(ignite());
+        ds = input().mlDataSet(0, ignite());
     }
 
     @Override public int offspringProduced() {

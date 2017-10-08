@@ -90,7 +90,7 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
         this.stopCriterion = stopCriterion;
     }
 
-    @Override public MLDataSet mlDataSet(Ignite ignite) {
+    @Override public MLDataSet mlDataSet(int subPop, Ignite ignite) {
         IgniteCache<Integer, MLDataPair> cache = ignite.getOrCreateCache(cacheName);
 
 //        System.out.println("dataset cache size: " + cache.size());

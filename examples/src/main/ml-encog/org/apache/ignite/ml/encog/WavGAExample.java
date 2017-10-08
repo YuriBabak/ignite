@@ -96,7 +96,7 @@ public class WavGAExample {
                 60,
                 evoOps,
                 30,
-                (in, ign) -> new TrainingSetScore(in.mlDataSet(ign)),
+                (in, ign) -> new TrainingSetScore(in.mlDataSet(0, ign)),
                 3,
                 new AddLeaders(0.2)
                     .andThen(new LearningRateAdjuster(null, 3))

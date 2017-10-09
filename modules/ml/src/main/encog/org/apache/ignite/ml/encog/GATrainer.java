@@ -37,13 +37,11 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.ml.encog.caches.GenomesCache;
 import org.apache.ignite.ml.encog.caches.InputCache;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
 import org.apache.ignite.ml.math.util.MapUtil;
-import org.encog.Encog;
 import org.encog.ml.MLMethod;
 import org.encog.ml.MLRegression;
 import org.encog.ml.MethodFactory;
@@ -77,6 +75,8 @@ public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData
     }
 
     @Override public EncogMethodWrapper train(GATrainerInput<? extends MLMethod, S, U> input) {
+        CacheUtils.setIgnite(ignite);
+
         cache = newCache();
         GenomesCache.getOrCreate(ignite);
 
@@ -152,7 +152,7 @@ public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData
 
             long before = System.currentTimeMillis();
             System.out.println("Doing Initial iteration for subPopulation " + subPopulation);
-            train.setThreadCount(1);
+//            train.setThreadCount(1);
             for (int i = 0; i < 3; i++)
                 train.iteration();
             System.out.println("Done in " + (System.currentTimeMillis() - before));

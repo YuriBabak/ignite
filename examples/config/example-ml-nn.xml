@@ -15,16 +15,16 @@
                         to our documentation: http://apacheignite.readme.io/docs/cluster-config
                     -->
                     <!-- Uncomment static IP finder to enable static-based discovery of initial nodes. -->
-                    <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">-->
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                    <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">-->
                         <property name="addresses">
                             <list>
-                                <value>172.25.4.171:47500..47509</value>
-                                <value>172.25.4.180:47500..47509</value>
-                                <value>172.25.1.19:47500..47509</value>
-                                <value>172.25.1.28:47500..47509</value>
-                                <value>172.25.1.29:47500..47509</value>
-                                <value>172.25.1.30:47500..47509</value>
+                                <value>172.25.4.171:48500..48509</value>
+                                <value>172.25.4.180:48500..48509</value>
+                                <value>172.25.1.19:48500..48509</value>
+                                <value>172.25.1.28:48500..48509</value>
+                                <value>172.25.1.29:48500..48509</value>
+                                <value>172.25.1.30:48500..48509</value>
                             </list>
                         </property>
                     </bean>

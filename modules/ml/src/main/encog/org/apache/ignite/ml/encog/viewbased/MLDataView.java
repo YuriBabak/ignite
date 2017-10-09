@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.encog.viewbased;
 
 import org.encog.ml.data.MLData;
+import org.encog.util.EngineArray;
 import org.encog.util.kmeans.Centroid;
 
 public class MLDataView implements MLData {
@@ -46,7 +47,9 @@ public class MLDataView implements MLData {
     // TODO: this method is used in TrainingSet error class, should rewrite this class
     // to get rid of copying
     @Override public double[] getData() {
-        throw new UnsupportedOperationException();
+        double[] res = new double[length];
+        EngineArray.arrayCopy(underlying, offset, res, 0, length);
+        return res;
     }
 
     @Override public double getData(int index) {

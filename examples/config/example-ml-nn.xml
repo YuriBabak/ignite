@@ -9,12 +9,13 @@
         <property name="communicationSpi">
             <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
                 <!-- Override local port. -->
-                <property name="localPort" value="48500"/>
+                <property name="localPort" value="49505"/>
             </bean>
         </property>
 
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="localPort" value="48500"/>
                 <property name="ipFinder">
                     <!--
                         Ignite provides several options for automatic discovery that can be used

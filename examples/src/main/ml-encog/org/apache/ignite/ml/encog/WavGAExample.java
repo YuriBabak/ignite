@@ -3,10 +3,11 @@ package org.apache.ignite.ml.encog;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.ignite.Ignite;
@@ -38,7 +39,7 @@ public class WavGAExample {
 
         String igniteCfgPath = "examples/config/example-ml-nn-client.xml";
 
-        CommandLineParser parser = new DefaultParser();
+        CommandLineParser parser = new BasicParser();
 
         int histDepthLog;
         int maxSamples;
@@ -130,21 +131,26 @@ public class WavGAExample {
     @NotNull private static Options buildOptions() {
         Options options = new Options();
 
-        Option.Builder builder = Option.builder();
+        Option histDepthOpt = OptionBuilder.withArgName("depth").withLongOpt("depth").hasArg()
+            .withDescription("log base 2 of depth of history for prediction, default is " + HISTORY_DEPTH_LOG_DEFAULT)
+            .isRequired(false).withType(Integer.TYPE).create();
 
-        Option histDepthOpt = builder.argName("depth").longOpt("depth").hasArg()
-            .desc("log base 2 of depth of history for prediction, default is " + HISTORY_DEPTH_LOG_DEFAULT).required(false).type(Integer.TYPE).build();
-        Option framesInBatchOpt = builder.argName("fib").longOpt("fib").hasArg()
-            .desc("number of wav frames in batch, default is " + FRAMES_IN_BATCH_DEFAULT).required(false).type(Integer.TYPE).build();
-        Option trainingSamplesOpt = builder.argName("tr_samples").longOpt("tr_samples").required()
-            .desc("path to sample").hasArgs().build();
-        Option trainingDataSampleOpt = builder.argName("data_samples").longOpt("data_samples").required()
-            .desc("path to data samples, uses for accuracy estimation").hasArg().build();
-        Option maxSamplesOpt = builder.argName("max_samples").longOpt("max_samples").hasArg()
-            .desc("max count of samples, default is " + MAX_SAMPLES_DEFAULT).required(false).type(Integer.TYPE).build();
+        Option framesInBatchOpt = OptionBuilder.withArgName("fib").withLongOpt("fib").hasArg()
+            .withDescription("number of wav frames in batch, default is " + FRAMES_IN_BATCH_DEFAULT).isRequired(false)
+            .withType(Integer.TYPE).create();
 
-        Option igniteConfOpt = builder.argName("cfg").longOpt("cfg").required(false)
-            .desc("path to ignite config, default is examples/config/example-ml-nn.xml").build();
+        Option trainingSamplesOpt = OptionBuilder.withArgName("tr_sample").withLongOpt("tr_sample").isRequired()
+            .withDescription("path to sample").hasArgs().create();
+
+        Option trainingDataSampleOpt = OptionBuilder.withArgName("data_samples").withLongOpt("data_samples").isRequired()
+            .withDescription("path to data samples, uses for accuracy estimation").hasArg().create();
+
+        Option maxSamplesOpt = OptionBuilder.withArgName("max_samples").withLongOpt("max_samples").hasArg()
+            .withDescription("max count of samples, default is " + MAX_SAMPLES_DEFAULT).isRequired(false)
+            .withType(Integer.TYPE).create();
+
+        Option igniteConfOpt = OptionBuilder.withArgName("cfg").withLongOpt("cfg").isRequired(false)
+            .withDescription("path to ignite config, default is examples/config/example-ml-nn.xml").create();
 
         options.addOption(histDepthOpt);
         options.addOption(framesInBatchOpt);

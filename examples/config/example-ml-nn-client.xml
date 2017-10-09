@@ -17,6 +17,7 @@
 
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="localPort" value="48500"/>
                 <property name="ipFinder">
                     <!--
                         Ignite provides several options for automatic discovery that can be used

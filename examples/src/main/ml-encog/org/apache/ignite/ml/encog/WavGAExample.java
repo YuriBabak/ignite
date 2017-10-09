@@ -57,7 +57,7 @@ public class WavGAExample {
             maxTicks = getIntOrDefault("max_ticks", MAX_TICKS_DEFAULT, line);
             histDepth = (int)Math.pow(2, histDepthLog);
 
-            trainingSample = line.getOptionValue("tr_samples");
+            trainingSample = line.getOptionValue("tr_sample");
             dataSample = line.getOptionValue("data_samples");
 
             if (line.hasOption("cfg"))

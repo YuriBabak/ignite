@@ -37,8 +37,12 @@ public class BasicStatsCounter implements Metaoptimizer<BasicStatsCounter.BasicS
         Map<Integer, BasicStats> stats) {
         double globalBest = stats.values().stream().mapToDouble(BasicStats::bestScore).min().orElse(Double.POSITIVE_INFINITY);
         int tick = stats.get(0).tick;
+        long prevTickTime = stats.get(0).prevGlobalTickTime;
+        long time = System.currentTimeMillis();
 
-        BasicStats data = new BasicStats(globalBest, tick);
+        System.out.println("");
+
+        BasicStats data = new BasicStats(globalBest, tick, time, time - prevTickTime);
 
         Map<Integer, BasicStats> res = new HashMap<>();
 
@@ -55,12 +59,23 @@ public class BasicStatsCounter implements Metaoptimizer<BasicStatsCounter.BasicS
     }
 
     public static class BasicStats implements Serializable {
+        long prevGlobalTickTime;
+        long currentGlobalTickDuration;
+
         double bestScore;
         int tick;
 
         public BasicStats(double bestScore, int tick) {
             this.bestScore = bestScore;
             this.tick = tick;
+            prevGlobalTickTime = System.currentTimeMillis();
+        }
+
+        public BasicStats(double bestScore, int tick, long prevTickTime, long currentGlobalTickDuration) {
+            this.bestScore = bestScore;
+            this.tick = tick;
+            prevGlobalTickTime = prevTickTime;
+            this.currentGlobalTickDuration = currentGlobalTickDuration;
         }
 
         public double bestScore() {
@@ -69,6 +84,14 @@ public class BasicStatsCounter implements Metaoptimizer<BasicStatsCounter.BasicS
 
         public int tick() {
             return tick;
+        }
+
+        public long prevGlobalTickTime() {
+            return prevGlobalTickTime;
+        }
+
+        public long currentGlobalTickDuration() {
+            return currentGlobalTickDuration;
         }
     }
 }

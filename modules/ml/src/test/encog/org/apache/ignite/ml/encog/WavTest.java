@@ -115,7 +115,7 @@ public class WavTest extends GridCommonAbstractTest {
         List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample" + sampleToRead + "_rate" + rate + ".wav", framesInBatch);
         System.out.println("Done.");
 
-        int pow = 8;
+        int pow = 5;
         int lookForwardFor = 1;
         int histDepth = (int)Math.pow(2, pow);
 
@@ -182,7 +182,13 @@ public class WavTest extends GridCommonAbstractTest {
             /*.andThen(new LearningRateAdjuster())*/
             ,
             0.02,
-            metaoptimizerData -> metaoptimizerData.get(0).get2().tick() > maxTicks
+            metaoptimizerData -> {
+                BasicStatsCounter.BasicStats stats = metaoptimizerData.get(0).get2();
+                int tick = stats.tick();
+                long msETA = stats.currentGlobalTickDuration() * (maxTicks - tick);
+                System.out.println("Current global iteration took " + stats.currentGlobalTickDuration() + "ms, ETA to end is " + (msETA / 1000 / 60) + "mins, " + (msETA / 1000 % 60) + " sec,");
+                return stats.tick() > maxTicks;
+            }
         );
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);

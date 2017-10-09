@@ -58,14 +58,10 @@ import org.jetbrains.annotations.NotNull;
  * Implementation of group trainer using genetic algorithm.
  */
 public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData, double[], GATrainerInput<? extends MLMethod, S, U>, EncogMethodWrapper> {
-    private static final int MAX_ITERATION = 40;
     public static String CACHE = "encog_nets";
 
     private Ignite ignite;
     private IgniteCache<IgniteBiTuple<UUID, Integer>, BasicNetwork> cache;
-
-    private int iteration = 0;
-    private MLMethodGenome globalLead = null;
 
     /**
      * @param ignite Ignite.
@@ -90,18 +86,8 @@ public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData
         Map<Integer, U> aggregatedStats = input.metaoptimizer().statsAggregator(stats);
 
         while (!input.shouldStop(aggregatedStats)) {
-            Instant start = Instant.now();
-
             GroupTrainerTask<S, U> task = new GroupTrainerTask<>(input.metaoptimizer()::statsAggregator, aggregatedStats);
             aggregatedStats = execute(task, trainingUUID);
-
-            Instant end = Instant.now();
-            long seconds = Duration.between(start, end).getSeconds();
-
-            Duration estimatedTime = Duration.ofSeconds((MAX_ITERATION - iteration) * seconds);
-
-            System.out.printf("%nIteration %d took %d seconds, estimated time to end is %d minutes %d seconds%n%n",
-                iteration, seconds, estimatedTime.toMinutes(), estimatedTime.getSeconds() % 60);
         }
 
         MLMethodGenome genome = CacheUtils.bcast(GenomesCache.NAME, () -> GATrainer.collectBest(trainingUUID)).stream().filter(Objects::nonNull).min(Comparator.comparingDouble(MLMethodGenome::getScore)).get();
@@ -193,10 +179,6 @@ public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData
      */
     private EncogMethodWrapper buildIgniteModel(MLMethodGenome lead) {
         return new EncogMethodWrapper((MLRegression)lead.getPhenotype());
-    }
-
-    private boolean isCompleted() {
-        return iteration++ == MAX_ITERATION; //TODO: impl
     }
 
     /** */

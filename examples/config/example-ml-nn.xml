@@ -27,8 +27,6 @@
                     <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">-->
                         <property name="addresses">
                             <list>
-                                <value>172.25.4.171:48500..48509</value>
-                                <value>172.25.4.180:48500..48509</value>
                                 <value>172.25.1.19:48500..48509</value>
                                 <value>172.25.1.28:48500..48509</value>
                                 <value>172.25.1.29:48500..48509</value>

@@ -102,7 +102,13 @@ public class WavGAExample {
                     .andThen(new LearningRateAdjuster(null, 3))
                     .andThen(new BasicStatsCounter()),
                 0.2,
-                m -> m.get(0).get2().tick() > maxTicks
+                metaoptimizerData -> {
+                    BasicStatsCounter.BasicStats stats = metaoptimizerData.get(0).get2();
+                    int tick = stats.tick();
+                    long msETA = stats.currentGlobalTickDuration() * (maxTicks - tick);
+                    System.out.println("Current global iteration took " + stats.currentGlobalTickDuration() + "ms, ETA to end is " + (msETA / 1000 / 60) + "mins, " + (msETA / 1000 % 60) + " sec,");
+                    return stats.tick() > maxTicks;
+                }
             );
 
             EncogMethodWrapper mdl = new GATrainer(ignite).train(input);

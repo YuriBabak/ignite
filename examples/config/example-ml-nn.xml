@@ -19,6 +19,8 @@
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
                         <property name="addresses">
                             <list>
+                                <value>172.25.4.171:47500..47509</value>
+                                <value>172.25.4.180:47500..47509</value>
                                 <value>172.25.1.19:47500..47509</value>
                                 <value>172.25.1.28:47500..47509</value>
                                 <value>172.25.1.29:47500..47509</value>

@@ -8,6 +8,13 @@
 
         <property name="clientMode" value="true"/>
 
+        <property name="communicationSpi">
+            <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
+                <!-- Override local port. -->
+                <property name="localPort" value="48500"/>
+            </bean>
+        </property>
+
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">

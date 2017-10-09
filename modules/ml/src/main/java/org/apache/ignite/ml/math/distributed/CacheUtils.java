@@ -50,6 +50,8 @@ import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
  * TODO: IGNITE-5102, fix sparse key filters.
  */
 public class CacheUtils {
+    private static Ignite locIgnite;
+
     /**
      * Cache entry support.
      *
@@ -92,7 +94,16 @@ public class CacheUtils {
      * Gets local Ignite instance.
      */
     public static Ignite ignite() {
-        return Ignition.localIgnite();
+        return locIgnite == null ? Ignition.localIgnite() : locIgnite;
+    }
+
+    /**
+     * Set local ignite.
+     *
+     * @param ignite Ignite.
+     */
+    public static void setIgnite(Ignite ignite){
+        locIgnite = ignite;
     }
 
     /**

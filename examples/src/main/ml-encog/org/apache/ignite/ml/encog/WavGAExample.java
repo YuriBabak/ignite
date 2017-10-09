@@ -36,7 +36,7 @@ public class WavGAExample {
         String trainingSample = "~/wav/sample.4";
         String dataSample = "~/wav/sample.4";
 
-        String igniteConfigPath = "examples/config/example-ml-nn.xml";
+        String igniteCfgPath = "examples/config/example-ml-nn-client.xml";
 
         CommandLineParser parser = new DefaultParser();
 
@@ -60,7 +60,7 @@ public class WavGAExample {
             dataSample = line.getOptionValue("data_samples");
 
             if (line.hasOption("cfg"))
-                igniteConfigPath = line.getOptionValue("cfg");
+                igniteCfgPath = line.getOptionValue("cfg");
 
         }
         catch (ParseException e) {
@@ -70,7 +70,7 @@ public class WavGAExample {
 
         Estimator estimator = new Estimator();
 
-        try (Ignite ignite = Ignition.start(igniteConfigPath)) {
+        try (Ignite ignite = Ignition.start(igniteCfgPath)) {
             System.out.println("Reading wav...");
             List<double[]> rawData = WavReader.read(trainingSample, framesInBatch);
             System.out.println("Done.");

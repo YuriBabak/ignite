@@ -66,7 +66,7 @@ public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJ
         Map<Integer, Population> map = locPop.get();
         Map<Integer, S> res = new HashMap<>();
 
-        map.entrySet().forEach(entry -> {
+        map.entrySet().parallelStream().forEach(entry -> {
             Population population = entry.getValue();
             int subPopulationNum = entry.getKey();
 

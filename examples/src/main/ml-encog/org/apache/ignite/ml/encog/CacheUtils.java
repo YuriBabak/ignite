@@ -23,6 +23,8 @@ public class CacheUtils {
      * @param histDepth History depth.
      */
     public static void loadIntoCache(List<double[]> wav, int histDepth, int maxSamples, String cacheName, Ignite ignite) {
+        getOrCreate(ignite);
+
         try (IgniteDataStreamer<Integer, MLDataPair> stmr = ignite.dataStreamer(cacheName)) {
             // Stream entries.
 

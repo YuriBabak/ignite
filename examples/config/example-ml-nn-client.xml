@@ -6,6 +6,8 @@
         <!-- Set to true to enable distributed class loading for examples, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
 
+        <property name="clientMode" value="true"/>
+
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
@@ -32,4 +34,5 @@
             </bean>
         </property>
     </bean>
+
 </beans>

@@ -63,11 +63,11 @@ public class WavReader {
         return batchs;
     }
 
-    public static void write(String path, double[] res){
+    public static void write(String path, double[] res, int rate){
         List<double[]> batchs = new ArrayList<>();
 
         try {
-            WavFile wavFile = WavFile.newWavFile(new File(path), 1, res.length, 16, 44100);
+            WavFile wavFile = WavFile.newWavFile(new File(path), 1, res.length, 16, rate / 2);
             wavFile.writeFrames(res, 0, res.length);
 
             wavFile.close();

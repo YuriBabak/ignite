@@ -29,13 +29,9 @@ public class WavGAExample {
     private static int HISTORY_DEPTH_LOG_DEFAULT = 6;
     private static int MAX_TICKS_DEFAULT = 40;
     private static int FRAMES_IN_BATCH_DEFAULT = 2;
+    private static int MAX_SAMPLES_DEFAULT = 1_000_000;
 
     public static void main(String[] args){
-        int histDepthLog = HISTORY_DEPTH_LOG_DEFAULT;
-        int maxTicks = MAX_TICKS_DEFAULT;
-        int framesInBatch = FRAMES_IN_BATCH_DEFAULT;
-
-        int histDepth = (int)Math.pow(2, histDepthLog);
 
         String trainingSample = "~/wav/sample.4";
         String dataSample = "~/wav/sample.4";
@@ -44,16 +40,21 @@ public class WavGAExample {
 
         CommandLineParser parser = new DefaultParser();
 
+        int histDepthLog;
+        int maxSamples;
+        int framesInBatch;
+        int maxTicks;
+        int histDepth;
+
         try {
             // parse the command line arguments
             CommandLine line = parser.parse( buildOptions(), args );
 
-            if (line.hasOption("depth_log"))
-                histDepthLog = Integer.parseInt(line.getOptionValue("depth"));
-            if (line.hasOption("fib"))
-                framesInBatch = Integer.parseInt(line.getOptionValue("fib"));
-            if (line.hasOption("max_ticks"))
-                histDepthLog = Integer.parseInt(line.getOptionValue("max_ticks"));
+            histDepthLog = getIntOrDefault("depth_log", HISTORY_DEPTH_LOG_DEFAULT, line);
+            maxSamples = getIntOrDefault("max_samples", MAX_SAMPLES_DEFAULT, line);
+            framesInBatch = getIntOrDefault("fib", FRAMES_IN_BATCH_DEFAULT, line);
+            maxTicks = getIntOrDefault("max_ticks", MAX_TICKS_DEFAULT, line);
+            histDepth = (int)Math.pow(2, histDepthLog);
 
             trainingSample = line.getOptionValue("tr_samples");
             dataSample = line.getOptionValue("data_samples");
@@ -74,7 +75,6 @@ public class WavGAExample {
             List<double[]> rawData = WavReader.read(trainingSample, framesInBatch);
             System.out.println("Done.");
 
-            int maxSamples = Integer.MAX_VALUE;
             CacheUtils.loadIntoCache(rawData, histDepth, maxSamples, CacheUtils.CACHE_NAME, ignite);
 
             IgniteFunction<Integer, IgniteNetwork> fact = getNNFactory(histDepthLog);
@@ -114,6 +114,10 @@ public class WavGAExample {
         }
     }
 
+    private static int getIntOrDefault(String optionName, int def, CommandLine line) {
+        return line.hasOption(optionName) ? Integer.parseInt(line.getOptionValue(optionName)) : def;
+    }
+
     /**
      * Build cli options.
      */
@@ -126,11 +130,12 @@ public class WavGAExample {
             .desc("log base 2 of depth of history for prediction, default is " + HISTORY_DEPTH_LOG_DEFAULT).required(false).type(Integer.TYPE).build();
         Option framesInBatchOpt = builder.argName("fib").longOpt("fib").hasArg()
             .desc("number of wav frames in batch, default is " + FRAMES_IN_BATCH_DEFAULT).required(false).type(Integer.TYPE).build();
-
         Option trainingSamplesOpt = builder.argName("tr_samples").longOpt("tr_samples").required()
             .desc("path to sample").hasArgs().build();
         Option trainingDataSampleOpt = builder.argName("data_samples").longOpt("data_samples").required()
             .desc("path to data samples, uses for accuracy estimation").hasArg().build();
+        Option maxSamplesOpt = builder.argName("max_samples").longOpt("max_samples").hasArg()
+            .desc("max count of samples, default is " + MAX_SAMPLES_DEFAULT).required(false).type(Integer.TYPE).build();
 
         Option igniteConfOpt = builder.argName("cfg").longOpt("cfg").required(false)
             .desc("path to ignite config, default is examples/config/example-ml-nn.xml").build();
@@ -140,6 +145,7 @@ public class WavGAExample {
         options.addOption(trainingSamplesOpt);
         options.addOption(trainingDataSampleOpt);
         options.addOption(igniteConfOpt);
+        options.addOption(maxSamplesOpt);
 
         return options;
     }

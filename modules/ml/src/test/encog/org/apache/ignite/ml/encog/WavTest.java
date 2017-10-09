@@ -49,7 +49,6 @@ import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.basic.BasicMLData;
 import org.encog.ml.data.basic.BasicMLDataPair;
-import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.TrainingSetScore;
 
@@ -110,13 +109,13 @@ public class WavTest extends GridCommonAbstractTest {
 
         int framesInBatch = 2;
         int sampleToRead = 4;
-        int rate = 11000;
+        int rate = 44100;
 
         System.out.println("Reading wav...");
         List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample" + sampleToRead + "_rate" + rate + ".wav", framesInBatch);
         System.out.println("Done.");
 
-        int pow = 6;
+        int pow = 8;
         int lookForwardFor = 1;
         int histDepth = (int)Math.pow(2, pow);
 
@@ -193,7 +192,7 @@ public class WavTest extends GridCommonAbstractTest {
 //
         calculateError(model, rate, sampleToRead, histDepth, framesInBatch);
 
-        System.out.println(NeuralNetworkUtils.printBinaryNetwork((BasicNetwork)model.getM()));
+//        System.out.println(NeuralNetworkUtils.printBinaryNetwork((BasicNetwork)model.getM()));
     }
 
     /**
@@ -336,8 +335,8 @@ public class WavTest extends GridCommonAbstractTest {
                 cnt += predict[0] * predict[0] - lable[0] * lable[0];
             }
 
-            WavReader.write(WAV_LOCAL + "sample" + sample + "_rate" + rate + "_3.wav", buff);
-            WavReader.write(WAV_LOCAL + "sample" + sample + "_rate" + rate + "_gen.wav", genBuff);
+            WavReader.write(WAV_LOCAL + "sample" + sample + "_rate" + rate + "_3.wav", buff, rate);
+            WavReader.write(WAV_LOCAL + "sample" + sample + "_rate" + rate + "_gen.wav", genBuff, rate);
 
             return cnt / samplesCnt;
         };

@@ -167,7 +167,7 @@ public class WavTestSibgleFile extends GridCommonAbstractTest {
     }
 
     private void calculateError(EncogMethodWrapper model, int rate, int sampleNumber, int historyDepth, int framesInBatch) throws IOException {
-        List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample" + sampleNumber + "_rate" + rate + ".wav", framesInBatch);
+        List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample" + sampleNumber + "_rate" + rate + ".wav", framesInBatch).batchs();
 
         IgniteBiFunction<Model<MLData, double[]>, List<double[]>, Double> errorsPercentage = errorsPercentage(sampleNumber, rate, historyDepth);
         Double accuracy = errorsPercentage.apply(model, rawData);

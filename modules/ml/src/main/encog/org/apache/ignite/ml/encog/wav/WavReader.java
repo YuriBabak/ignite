@@ -28,17 +28,36 @@ import org.apache.ignite.IgniteException;
  * Wav reader
  */
 public class WavReader {
+    public static class WavInfo {
+        List<double[]> batchs;
+        WavFile file;
+
+        public WavInfo(List<double[]> batchs, WavFile file) {
+            this.batchs = batchs;
+            this.file = file;
+        }
+
+        public List<double[]> batchs() {
+            return batchs;
+        }
+
+        public WavFile file() {
+            return file;
+        }
+    }
+
     /**
      * Read wav file to list of batch of wav frames.
      *
      * @param path Path.
      * @param numOfFramesInBatch Number of frames in batch.
      */
-    public static List<double[]> read(String path, int numOfFramesInBatch){
+    public static WavInfo read(String path, int numOfFramesInBatch){
         List<double[]> batchs = new ArrayList<>();
 
+        WavFile wavFile = null;
         try {
-            WavFile wavFile = WavFile.openWavFile(new File(path));
+            wavFile = WavFile.openWavFile(new File(path));
             System.out.println("");wavFile.getValidBits();
 
             wavFile.display();
@@ -60,7 +79,7 @@ public class WavReader {
             throw new IgniteException("Failed to read file: " + path, e);
         }
 
-        return batchs;
+        return new WavInfo(batchs, wavFile);
     }
 
     // TODO: at the moment we support only single channeled files.
@@ -93,7 +112,7 @@ public class WavReader {
         List<double[]> batchs = new ArrayList<>();
 
         try {
-            WavFile wavFile = WavFile.newWavFile(new File(path), 1, res.length, 16, rate / 2);
+            WavFile wavFile = WavFile.newWavFile(new File(path), 1, res.length, 16, rate);
             wavFile.writeFrames(res, 0, res.length);
 
             wavFile.close();

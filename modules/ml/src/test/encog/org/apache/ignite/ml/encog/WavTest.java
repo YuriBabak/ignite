@@ -19,10 +19,8 @@ package org.apache.ignite.ml.encog;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
@@ -322,9 +320,13 @@ public class WavTest extends GridCommonAbstractTest {
     private void calculateError(EncogMethodWrapper model, int rate, int sampleNumber, int historyDepth, int framesInBatch) throws IOException {
         List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample" + sampleNumber + "_rate" + rate + ".wav", framesInBatch);
 
-        IgniteBiFunction<Model<MLData, double[]>, List<double[]>, Double> errorsPercentage = errorsPercentage(sampleNumber, rate, historyDepth);
+        PredictionTracer writer = new PredictionTracer();
+
+        IgniteBiFunction<Model<MLData, double[]>, List<double[]>, Double> errorsPercentage = errorsPercentage(
+            sampleNumber, rate, historyDepth, writer);
         Double accuracy = errorsPercentage.apply(model, rawData);
         System.out.println(">>> Errs estimation: " + accuracy);
+        System.out.println(">>> Tracing data saved: " + writer);
     }
 
     private static IgniteNetwork buildTreeLikeNet(int leavesCountLog) {
@@ -377,7 +379,8 @@ public class WavTest extends GridCommonAbstractTest {
         return res;
     }
 
-    private IgniteBiFunction<Model<MLData, double[]>, List<double[]>, Double> errorsPercentage(int sample, int rate, int historyDepth){
+    private IgniteBiFunction<Model<MLData, double[]>, List<double[]>, Double> errorsPercentage(int sample, int rate,
+        int historyDepth, BiConsumer<Double, Double> writer){
 
         return (model, ds) -> {
             double buff[] = new double[ds.size() - historyDepth];
@@ -410,6 +413,8 @@ public class WavTest extends GridCommonAbstractTest {
                 genBuff[i] = genPred;
                 inputForGen.remove(0);
                 inputForGen.add(historyDepth - 1, genPred);
+
+                writer.accept(lable[0], predict[0]);
 
                 cnt += predict[0] * predict[0] - lable[0] * lable[0];
             }

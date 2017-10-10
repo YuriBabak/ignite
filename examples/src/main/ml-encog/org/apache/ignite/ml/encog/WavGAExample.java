@@ -77,8 +77,6 @@ public class WavGAExample {
             return;
         }
 
-        Estimator estimator = new Estimator();
-
         try (Ignite ignite = Ignition.start(igniteCfgPath)) {
             System.out.println("Reading wav...");
 
@@ -157,6 +155,10 @@ public class WavGAExample {
             .withDescription("log base 2 of depth of history for prediction, default is " + HISTORY_DEPTH_LOG_DEFAULT)
             .isRequired(false).withType(Integer.TYPE).create();
 
+        Option maxTicksOpt = OptionBuilder.withArgName("max_ticks").withLongOpt("max_ticks").hasArg()
+            .withDescription("maximal count of global ticks " + MAX_TICKS_DEFAULT)
+            .isRequired(false).withType(Integer.TYPE).create();
+
         Option framesInBatchOpt = OptionBuilder.withArgName("fib").withLongOpt("fib").hasArg()
             .withDescription("number of wav frames in batch, default is " + FRAMES_IN_BATCH_DEFAULT).isRequired(false)
             .withType(Integer.TYPE).create();
@@ -183,6 +185,8 @@ public class WavGAExample {
         options.addOption(trainingDataSampleOpt);
         options.addOption(igniteConfOpt);
         options.addOption(maxSamplesOpt);
+        options.addOption(wavOutOpt);
+        options.addOption(maxTicksOpt);
 
         return options;
     }

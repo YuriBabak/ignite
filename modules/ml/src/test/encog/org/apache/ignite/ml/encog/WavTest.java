@@ -318,7 +318,7 @@ public class WavTest extends GridCommonAbstractTest {
     }
 
     private void calculateError(EncogMethodWrapper model, int rate, int sampleNumber, int historyDepth, int framesInBatch) throws IOException {
-        List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample" + sampleNumber + "_rate" + rate + ".wav", framesInBatch);
+        List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample" + sampleNumber + "_rate" + rate + ".wav", framesInBatch).batchs();
 
         PredictionTracer writer = new PredictionTracer();
 
@@ -419,7 +419,7 @@ public class WavTest extends GridCommonAbstractTest {
                 cnt += predict[0] * predict[0] - lable[0] * lable[0];
             }
 
-            WavReader.write(WAV_LOCAL + "sample" + sample + "_rate" + rate + "_3.wav", buff, rate);
+            WavReader.write(WAV_LOCAL + "sample" + sample + "_rate" + rate + "_3.wav", buff, rate / 2);
             WavReader.write(WAV_LOCAL + "sample" + sample + "_rate" + rate + "_gen.wav", genBuff, rate);
 
             return cnt / samplesCnt;

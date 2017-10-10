@@ -17,21 +17,33 @@
 
 package org.apache.ignite.ml.encog.util;
 
-public class MSECalculator implements SequentialOperation {
-    double s2;
-    int cnt;
+import org.apache.ignite.ml.encog.wav.WavReader;
+
+public class PredictedWavWriter implements SequentialOperation {
+    private String outputPath;
+    private int size;
+    private int offset = 0;
+    private double[] buff;
+    private int outputRate;
+
+    public PredictedWavWriter(String outputPath, int size, int outputRate) {
+        this.outputPath = outputPath;
+        this.size = size;
+        this.outputRate = outputRate;
+        buff = new double[size];
+    }
 
     @Override public void init(double[] initial) {
-        s2 = 0.0;
-        cnt = 0;
+        System.arraycopy(initial, 0, buff, 0, initial.length);
+        offset = initial.length;
     }
 
     @Override public void handle(double[] groundTruth, double[] predicted) {
-        s2 += (groundTruth[0] - predicted[0]) * (groundTruth[0] - predicted[0]);
-        cnt++;
+        buff[offset] = predicted[0];
+        offset++;
     }
 
     @Override public void finish() {
-        System.out.println("MSE is " + (cnt == 0 ? 0 : s2 / cnt));
+        WavReader.write(outputPath, buff, outputRate);
     }
 }

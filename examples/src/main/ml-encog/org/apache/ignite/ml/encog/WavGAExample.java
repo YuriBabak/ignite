@@ -20,6 +20,7 @@ import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
 import org.apache.ignite.ml.encog.metaoptimizers.BasicStatsCounter;
 import org.apache.ignite.ml.encog.metaoptimizers.LearningRateAdjuster;
 import org.apache.ignite.ml.encog.util.MSECalculator;
+import org.apache.ignite.ml.encog.util.PredictedWavWriter;
 import org.apache.ignite.ml.encog.util.SequentialRunner;
 import org.apache.ignite.ml.encog.wav.WavReader;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -29,6 +30,7 @@ import org.encog.neural.networks.training.TrainingSetScore;
 import org.jetbrains.annotations.NotNull;
 
 public class WavGAExample {
+    private static final String OUTPUT_PRED_WAV_DEFAULT = "~/output.wav";
     private static int HISTORY_DEPTH_LOG_DEFAULT = 5;
     private static int MAX_TICKS_DEFAULT = 40;
     private static int FRAMES_IN_BATCH_DEFAULT = 2;
@@ -48,6 +50,7 @@ public class WavGAExample {
         int framesInBatch;
         int maxTicks;
         int histDepth;
+        String outputWavPath;
 
         try {
             // parse the command line arguments
@@ -58,6 +61,7 @@ public class WavGAExample {
             framesInBatch = getIntOrDefault("fib", FRAMES_IN_BATCH_DEFAULT, line);
             maxTicks = getIntOrDefault("max_ticks", MAX_TICKS_DEFAULT, line);
             histDepth = (int)Math.pow(2, histDepthLog);
+            outputWavPath = line.getOptionValue("out", OUTPUT_PRED_WAV_DEFAULT);
 
             trainingSample = line.getOptionValue("tr_sample");
             dataSample = line.getOptionValue("data_samples");
@@ -77,7 +81,9 @@ public class WavGAExample {
 
         try (Ignite ignite = Ignition.start(igniteCfgPath)) {
             System.out.println("Reading wav...");
-            List<double[]> rawData = WavReader.read(trainingSample, framesInBatch);
+
+            WavReader.WavInfo inputWav = WavReader.read(trainingSample, framesInBatch);
+            List<double[]> rawData = inputWav.batchs();
             System.out.println("Done.");
 
             long before = System.currentTimeMillis();
@@ -126,7 +132,10 @@ public class WavGAExample {
             System.out.println("Training took " + (System.currentTimeMillis() - before) + " ms.");
 
             SequentialRunner runner = new SequentialRunner();
+
             runner.add(new MSECalculator());
+            runner.add(new PredictedWavWriter(outputWavPath, inputWav.batchs().size(), (int)(inputWav.file().getSampleRate() / inputWav.file().getNumChannels())));
+
             runner.run(mdl, histDepth, framesInBatch, dataSample);
         }
         catch (IOException e) {
@@ -164,6 +173,9 @@ public class WavGAExample {
 
         Option igniteConfOpt = OptionBuilder.withArgName("cfg").withLongOpt("cfg").hasArg().isRequired(false)
             .withDescription("path to ignite config, default is examples/config/example-ml-nn.xml").create();
+
+        Option wavOutOpt = OptionBuilder.withArgName("out").withLongOpt("out").hasArg().isRequired(false)
+            .withDescription("path to predicted wav, default is " + OUTPUT_PRED_WAV_DEFAULT).create();
 
         options.addOption(histDepthOpt);
         options.addOption(framesInBatchOpt);

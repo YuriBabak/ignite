@@ -34,11 +34,13 @@ public class SequentialRunner {
     }
 
     public void run(EncogMethodWrapper model, int histDepth, int numOfFramesInBatch, String testWavPath ) throws IOException {
-        List<double[]> ds = WavReader.read(testWavPath, numOfFramesInBatch);
+        WavReader.WavInfo info = WavReader.read(testWavPath, numOfFramesInBatch);
+        List<double[]> ds = info.batchs();
+        int channels = info.file().getNumChannels();
 
         // Init all operations
         double[] initial = ds.subList(0, histDepth).stream().map(doubles ->
-            (Arrays.stream(doubles).sum() / doubles.length + 1) / 2).mapToDouble(d -> d).toArray();
+            (Arrays.stream(doubles).sum() / doubles.length + 1) / channels).mapToDouble(d -> d).toArray();
 
         ops.forEach(op -> op.init(initial));
 
@@ -47,10 +49,10 @@ public class SequentialRunner {
         for (int i = histDepth; i < samplesCnt-1; i++){
 
             BasicMLData dataSetEntry = new BasicMLData(ds.subList(i - histDepth, i).stream().map(doubles ->
-                (Arrays.stream(doubles).sum() / doubles.length + 1) / 2).mapToDouble(d -> d).toArray());
+                (Arrays.stream(doubles).sum() / doubles.length + 1) / channels).mapToDouble(d -> d).toArray());
 
             double[] rawLable = ds.get(i + 1);
-            double[] lable = {(Arrays.stream(rawLable).sum() / rawLable.length + 1) / 2};
+            double[] lable = {(Arrays.stream(rawLable).sum() / rawLable.length + 1) / channels};
             double[] predict = model.predict(dataSetEntry);
 
             ops.forEach(operation -> operation.handle(lable, predict));

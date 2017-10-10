@@ -63,6 +63,32 @@ public class WavReader {
         return batchs;
     }
 
+    // TODO: at the moment we support only single channeled files.
+    public static double[] readAsSingleChannel(String path){
+        double[] arr = null;
+        try {
+            WavFile wavFile = WavFile.openWavFile(new File(path));
+            int frames = (int)(wavFile.getNumFrames() / wavFile.getNumChannels());
+            arr = new double[frames];
+            System.out.println("");
+            wavFile.getValidBits();
+            wavFile.display();
+
+            int framesRead;
+
+            do {
+                framesRead = wavFile.readFrames(arr, frames);
+            } while (framesRead != 0);
+
+            wavFile.close();
+        }
+        catch (IOException | WavFileException e) {
+            throw new IgniteException("Failed to read file: " + path, e);
+        }
+
+        return arr;
+    }
+
     public static void write(String path, double[] res, int rate){
         List<double[]> batchs = new ArrayList<>();
 

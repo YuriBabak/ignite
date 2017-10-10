@@ -4,7 +4,7 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
         <!-- Set to true to enable distributed class loading for examples, default is false. -->
-        <property name="peerClassLoadingEnabled" value="true"/>
+        <!--<property name="peerClassLoadingEnabled" value="true"/>-->
 
         <property name="communicationSpi">
             <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
@@ -29,7 +29,6 @@
                             <list>
                                 <value>172.25.1.19:48500..48509</value>
                                 <value>172.25.1.28:48500..48509</value>
-                                <value>172.25.1.29:48500..48509</value>
                                 <value>172.25.1.30:48500..48509</value>
                             </list>
                         </property>

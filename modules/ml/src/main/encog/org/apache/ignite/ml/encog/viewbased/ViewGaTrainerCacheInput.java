@@ -19,10 +19,12 @@ package org.apache.ignite.ml.encog.viewbased;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
@@ -31,14 +33,17 @@ import org.apache.ignite.ml.encog.GATrainerInput;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.metaoptimizers.Metaoptimizer;
 import org.apache.ignite.ml.encog.util.Util;
+import org.apache.ignite.ml.math.distributed.CacheUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.encog.ml.CalculateScore;
 import org.encog.ml.MLEncodable;
 import org.encog.ml.MLMethod;
+import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.MLDataSet;
+import org.encog.ml.data.basic.BasicMLDataPair;
 import org.encog.ml.data.basic.BasicMLDataSet;
 
 public class ViewGaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends Serializable> implements GATrainerInput<T, S, U> {
@@ -102,13 +107,16 @@ public class ViewGaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U exte
         int totalKeys = localKeys.size();
         System.out.println("Local keys size: " + totalKeys);
 
-        int samplesTotal = 0;
-        for (Integer key : localKeys) {
-//            samplesTotal += cache.get(key).length -
+        LinkedList<MLDataPair> lst = new LinkedList<>();
+        for (Cache.Entry<Integer, double[]> entry : cache.localEntries()) {
+            double[] arr = entry.getValue();
+            int offsetLimit = (arr.length - historyDepth - 1);
+            int[] offsets = Util.selectKDistinct(offsetLimit, (int)((offsetLimit + 1) * batchPercentage));
+            for (int offset : offsets)
+                lst.add(new BasicMLDataPair(new MLDataView(arr, offset, historyDepth), new MLDataView(arr, offset + historyDepth, 1)));
         }
 
-        // TODO: WIP
-        return null;
+        return new BasicMLDataSet(lst);
     }
 
     @Override public IgniteSupplier<T> methodFactory(int i) {

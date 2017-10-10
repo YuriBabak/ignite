@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
@@ -64,7 +65,7 @@ public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJ
 
         LocalPopulation<S, U> locPop = GenomesCache.localPopulation(trainingUuid, ignite);
         Map<Integer, Population> map = locPop.get();
-        Map<Integer, S> res = new HashMap<>();
+        Map<Integer, S> res = new ConcurrentHashMap<>();
 
         map.entrySet().parallelStream().forEach(entry -> {
             Population population = entry.getValue();

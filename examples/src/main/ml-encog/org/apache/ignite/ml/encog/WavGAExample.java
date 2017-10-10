@@ -60,8 +60,10 @@ public class WavGAExample {
             trainingSample = line.getOptionValue("tr_sample");
             dataSample = line.getOptionValue("data_samples");
 
-            if (line.hasOption("cfg"))
+            if (line.hasOption("cfg")) {
                 igniteCfgPath = line.getOptionValue("cfg");
+                System.out.println("Starting with config " + igniteCfgPath);
+            }
 
         }
         catch (ParseException e) {
@@ -149,7 +151,7 @@ public class WavGAExample {
             .withDescription("max count of samples, default is " + MAX_SAMPLES_DEFAULT).isRequired(false)
             .withType(Integer.TYPE).create();
 
-        Option igniteConfOpt = OptionBuilder.withArgName("cfg").withLongOpt("cfg").isRequired(false)
+        Option igniteConfOpt = OptionBuilder.withArgName("cfg").withLongOpt("cfg").hasArg().isRequired(false)
             .withDescription("path to ignite config, default is examples/config/example-ml-nn.xml").create();
 
         options.addOption(histDepthOpt);

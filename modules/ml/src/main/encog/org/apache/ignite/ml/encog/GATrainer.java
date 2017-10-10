@@ -18,8 +18,6 @@
 package org.apache.ignite.ml.encog;
 
 import java.io.Serializable;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -145,7 +143,6 @@ public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData
 
             train.finishTraining();
 
-            // TODO: replace null in ctx or remove ctx param completely;
             res.put(subPopulation, input.metaoptimizer().extractStats(train.getGenetic().getPopulation(), input.metaoptimizer().initialData(subPopulation)));
 
 //            Encog.getInstance().shutdown();

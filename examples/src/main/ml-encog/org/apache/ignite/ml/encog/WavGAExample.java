@@ -19,6 +19,8 @@ import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
 import org.apache.ignite.ml.encog.metaoptimizers.BasicStatsCounter;
 import org.apache.ignite.ml.encog.metaoptimizers.LearningRateAdjuster;
+import org.apache.ignite.ml.encog.util.MSECalculator;
+import org.apache.ignite.ml.encog.util.SequentialRunner;
 import org.apache.ignite.ml.encog.wav.WavReader;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.encog.engine.network.activation.ActivationSigmoid;
@@ -27,7 +29,7 @@ import org.encog.neural.networks.training.TrainingSetScore;
 import org.jetbrains.annotations.NotNull;
 
 public class WavGAExample {
-    private static int HISTORY_DEPTH_LOG_DEFAULT = 6;
+    private static int HISTORY_DEPTH_LOG_DEFAULT = 5;
     private static int MAX_TICKS_DEFAULT = 40;
     private static int FRAMES_IN_BATCH_DEFAULT = 2;
     private static int MAX_SAMPLES_DEFAULT = 1_000_000;
@@ -78,16 +80,21 @@ public class WavGAExample {
             List<double[]> rawData = WavReader.read(trainingSample, framesInBatch);
             System.out.println("Done.");
 
+            long before = System.currentTimeMillis();
             CacheUtils.loadIntoCache(rawData, histDepth, maxSamples, CacheUtils.CACHE_NAME, ignite);
 
             IgniteFunction<Integer, IgniteNetwork> fact = getNNFactory(histDepthLog);
+
+            double lr = 0.5;
+
+            System.out.println("Learning rate is " + lr);
 
             List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
                 new NodeCrossover(0.2, "nc"),
 //              new CrossoverFeatures(0.2, "cf"),
 //              new WeightCrossover(0.2, "wc"),
-                new WeightMutation(0.2, 0.05, "wm"),
-                new MutateNodes(10, 0.2, 0.05, "mn")
+                new WeightMutation(0.2, lr, "wm"),
+                new MutateNodes(10, 0.2, lr, "mn")
             );
 
             int datasetSize = Math.min(maxSamples, rawData.size() - histDepth - 1);
@@ -100,7 +107,7 @@ public class WavGAExample {
                 evoOps,
                 30,
                 (in, ign) -> new TrainingSetScore(in.mlDataSet(0, ign)),
-                3,
+                4,
                 new AddLeaders(0.2)
                     .andThen(new LearningRateAdjuster(null, 3))
                     .andThen(new BasicStatsCounter()),
@@ -114,9 +121,13 @@ public class WavGAExample {
                 }
             );
 
-            EncogMethodWrapper mdl = new GATrainer(ignite).train(input);
+            EncogMethodWrapper mdl = new GATrainer<>(ignite).train(input);
 
-            estimator.calculateError(mdl, histDepth, framesInBatch, dataSample);
+            System.out.println("Training took " + (System.currentTimeMillis() - before) + " ms.");
+
+            SequentialRunner runner = new SequentialRunner();
+            runner.add(new MSECalculator());
+            runner.run(mdl, histDepth, framesInBatch, dataSample);
         }
         catch (IOException e) {
             e.printStackTrace();

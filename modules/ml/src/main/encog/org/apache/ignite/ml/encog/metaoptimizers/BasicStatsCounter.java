@@ -37,7 +37,7 @@ public class BasicStatsCounter implements Metaoptimizer<BasicStatsCounter.BasicS
         Map<Integer, BasicStats> stats) {
         double globalBest = stats.values().stream().mapToDouble(BasicStats::bestScore).min().orElse(Double.POSITIVE_INFINITY);
         int tick = stats.get(0).tick;
-        long prevTickTime = stats.get(0).prevGlobalTickTime;
+        long prevTickTime = stats.values().stream().mapToLong(BasicStats::prevGlobalTickTime).min().getAsLong();
         long time = System.currentTimeMillis();
 
         System.out.println("");
@@ -46,9 +46,7 @@ public class BasicStatsCounter implements Metaoptimizer<BasicStatsCounter.BasicS
 
         Map<Integer, BasicStats> res = new HashMap<>();
 
-        stats.keySet().forEach(k -> {
-            res.put(k, data);
-        });
+        stats.keySet().forEach(k -> res.put(k, data));
 
         return res;
     }

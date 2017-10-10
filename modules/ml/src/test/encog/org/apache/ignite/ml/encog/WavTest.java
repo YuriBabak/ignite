@@ -38,8 +38,6 @@ import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
 import org.apache.ignite.ml.encog.metaoptimizers.BasicStatsCounter;
 import org.apache.ignite.ml.encog.metaoptimizers.LearningRateAdjuster;
-import org.apache.ignite.ml.encog.metaoptimizers.TopologyChanger;
-import org.apache.ignite.ml.encog.util.Util;
 import org.apache.ignite.ml.encog.viewbased.ViewGaTrainerCacheInput;
 import org.apache.ignite.ml.encog.wav.WavReader;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;

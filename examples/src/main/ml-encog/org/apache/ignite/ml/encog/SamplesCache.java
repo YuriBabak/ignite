@@ -13,7 +13,7 @@ import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.basic.BasicMLData;
 import org.encog.ml.data.basic.BasicMLDataPair;
 
-public class CacheUtils {
+public class SamplesCache {
     public static final String CACHE_NAME = "WAV_EXAMPLE_CACHE";
 
     /**
@@ -23,29 +23,32 @@ public class CacheUtils {
      * @param histDepth History depth.
      */
     public static void loadIntoCache(List<double[]> wav, int histDepth, int maxSamples, String cacheName, Ignite ignite) {
-        getOrCreate(ignite);
+        IgniteCache<Integer, MLDataPair> cache = getOrCreate(ignite);
+        System.out.println("initial cache size is " + cache.size());
 
         try (IgniteDataStreamer<Integer, MLDataPair> stmr = ignite.dataStreamer(cacheName)) {
+            stmr.allowOverwrite(true);
             // Stream entries.
-
             int samplesCnt = wav.size();
             System.out.println("Loading " + samplesCnt + " samples into cache...");
-            for (int i = histDepth; i < samplesCnt - 1 && (i - histDepth) < maxSamples; i++){
-
+            for (int i = histDepth; i < samplesCnt - 1 && (i - histDepth) < maxSamples; i++) {
                 // The mean is calculated inefficient
                 BasicMLData dataSetEntry = new BasicMLData(wav.subList(i - histDepth, i).stream().map(doubles ->
                     (Arrays.stream(doubles).sum() / doubles.length + 1) / 2).mapToDouble(d -> d).toArray());
 
                 double[] rawLable = wav.get(i + 1);
                 double[] lable = {(Arrays.stream(rawLable).sum() / rawLable.length + 1) / 2};
+                BasicMLDataPair val = new BasicMLDataPair(dataSetEntry, new BasicMLData(lable));
 
-                stmr.addData(i - histDepth, new BasicMLDataPair(dataSetEntry, new BasicMLData(lable)));
+                stmr.addData(i - histDepth, val);
 
                 if (i % 5000 == 0)
-                    System.out.println("Loaded " + i);
+                    System.out.println("Loaded " + i + ", input: " + val.getInput().size() + " label: " + val.getIdeal().size());
             }
             System.out.println("Done");
         }
+
+        System.out.println("Cache size after streaming (" + cacheName + "): " + cache.size());
     }
 
     public static IgniteCache<Integer, MLDataPair> getOrCreate(Ignite ignite) {

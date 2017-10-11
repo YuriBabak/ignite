@@ -85,7 +85,7 @@ public class WavGAExample {
             System.out.println("Done.");
 
             long before = System.currentTimeMillis();
-            CacheUtils.loadIntoCache(rawData, histDepth, maxSamples, CacheUtils.CACHE_NAME, ignite);
+            SamplesCache.loadIntoCache(rawData, histDepth, maxSamples, SamplesCache.CACHE_NAME, ignite);
 
             IgniteFunction<Integer, IgniteNetwork> fact = getNNFactory(histDepthLog);
 
@@ -104,7 +104,7 @@ public class WavGAExample {
             int datasetSize = Math.min(maxSamples, rawData.size() - histDepth - 1);
 
             System.out.println("DS size " + datasetSize);
-            GaTrainerCacheInput input = new GaTrainerCacheInput<>(CacheUtils.CACHE_NAME,
+            GaTrainerCacheInput input = new GaTrainerCacheInput<>(SamplesCache.CACHE_NAME,
                 fact,
                 datasetSize,
                 60,
@@ -125,9 +125,13 @@ public class WavGAExample {
                 }
             );
 
+
             EncogMethodWrapper mdl = new GATrainer<>(ignite).train(input);
 
             System.out.println("Training took " + (System.currentTimeMillis() - before) + " ms.");
+
+            SamplesCache.getOrCreate(ignite).destroy();
+
 
             SequentialRunner runner = new SequentialRunner();
 
@@ -151,7 +155,7 @@ public class WavGAExample {
     @NotNull private static Options buildOptions() {
         Options options = new Options();
 
-        Option histDepthOpt = OptionBuilder.withArgName("depth").withLongOpt("depth").hasArg()
+        Option histDepthOpt = OptionBuilder.withArgName("depth_log").withLongOpt("depth_log").hasArg()
             .withDescription("log base 2 of depth of history for prediction, default is " + HISTORY_DEPTH_LOG_DEFAULT)
             .isRequired(false).withType(Integer.TYPE).create();
 

@@ -92,28 +92,31 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
 
     @Override public MLDataSet mlDataSet(int subPop, Ignite ignite) {
         IgniteCache<Integer, MLDataPair> cache = ignite.getOrCreateCache(cacheName);
+        System.out.println("Total entries in dataset (cache " + cache.getName() + "): " + cache.size());
 
 //        System.out.println("dataset cache size: " + cache.size());
 
         ArrayList<MLDataPair> lst = new ArrayList<>();
 
-        ClusterNode localNode = ignite.cluster().localNode();
+        ClusterNode locNode = ignite.cluster().localNode();
+        List<Integer> locKeys = IntStream.range(0, datasetSize()).boxed().filter(i -> ignite.affinity(cacheName).mapKeyToNode(i).equals(locNode)).collect(Collectors.toList());
 
-        List<Integer> localKeys = IntStream.range(0, datasetSize()).boxed().filter(i -> ignite.affinity(cacheName).mapKeyToNode(i).equals(localNode)).collect(Collectors.toList());
-
-        int totalKeys = localKeys.size();
+        int totalKeys = locKeys.size();
         System.out.println("Local keys size: " + totalKeys);
         int subsetSize = (int)(totalKeys * batchPercentage);
 
         int[] subset = Util.selectKDistinct(totalKeys, subsetSize);
 
-        for (int i : subset)
-            lst.add(cache.get(localKeys.get(i)));
-//
-//        for (Cache.Entry<Integer, MLDataPair> entry : cache.localEntries())
-//            lst.add(entry.getValue());
+        System.out.println("Subset size: " + subset.length);
 
-        return new BasicMLDataSet(lst);
+        for (int i : subset) {
+            MLDataPair pair = cache.get(locKeys.get(i));
+            lst.add(pair);
+        }
+
+        BasicMLDataSet res = new BasicMLDataSet(lst);
+        System.out.println("Generated dataset of size " + res.size() + " dimensions: " + res.get(0).getInput().size() + "," + res.get(0).getIdeal().size());
+        return res;
     }
 
     @Override public IgniteSupplier<T> methodFactory(int i) {

@@ -23,7 +23,7 @@ import org.encog.ml.genetic.MLMethodGenome;
 import org.encog.neural.networks.BasicNetwork;
 
 /**
- * TODO: add description.
+ * Crossover of two networks with tree-like structure.
  */
 public class NodeCrossover extends IgniteEvolutionaryOperator {
     public NodeCrossover(double prob, String operatorId) {
@@ -43,23 +43,28 @@ public class NodeCrossover extends IgniteEvolutionaryOperator {
 
         BasicNetwork parent1 = (BasicNetwork)((MLMethodGenome)parents[0]).getPhenotype();
         BasicNetwork parent2 = (BasicNetwork)((MLMethodGenome)parents[1]).getPhenotype();
-        BasicNetwork child = (BasicNetwork)parent1.clone();
 
-        int cnt = parent1.getLayerCount();
+        BasicNetwork highest = parent1.getLayerCount() >= parent2.getLayerCount() ? parent1 : parent2;
+        BasicNetwork lowest = parent1.getLayerCount() < parent2.getLayerCount() ? parent1 : parent2;
 
-        for (int l = 1; l < cnt - 1; l++) {
-            for (int n = 0; n < parent1.getLayerNeuronCount(l); n++) {
+        BasicNetwork child = (BasicNetwork)highest.clone();
+
+        int cnt = highest.getLayerCount();
+        int depthDelta = highest.getLayerCount() - lowest.getLayerCount();
+
+        for (int l = 1 + depthDelta; l < cnt - 1; l++) {
+            for (int n = 0; n < lowest.getLayerNeuronCount(l); n++) {
                 // true - first parent, false - second parent
                 boolean isFirst = rnd.nextBoolean();
 
                 if (!isFirst) {
                     // Set inputs
-                    for (int k = 0; k < parent1.getLayerNeuronCount(l - 1); k++)
-                        child.setWeight(l - 1, k, n, parent2.getWeight(l - 1, k, n));
+                    for (int k = 0; k < highest.getLayerNeuronCount(l - 1); k++)
+                        child.setWeight(l - 1, k, n, lowest.getWeight(l - 1 - depthDelta, k, n));
 
                     // Set outputs
-                    for (int k = 0; k < parent1.getLayerNeuronCount(l + 1); k++)
-                        child.setWeight(l, n, k, parent2.getWeight(l, n, k));
+                    for (int k = 0; k < highest.getLayerNeuronCount(l + 1); k++)
+                        child.setWeight(l, n, k, lowest.getWeight(l - depthDelta, n, k));
                 }
             }
         }

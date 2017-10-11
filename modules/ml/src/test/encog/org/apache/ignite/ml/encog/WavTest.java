@@ -19,7 +19,10 @@ package org.apache.ignite.ml.encog;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
@@ -28,7 +31,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.encog.caches.TestTrainingSetCache;
-import org.apache.ignite.ml.encog.caches.TestTrainingSetCacheSingleFileEntity;
 import org.apache.ignite.ml.encog.evolution.operators.IgniteEvolutionaryOperator;
 import org.apache.ignite.ml.encog.evolution.operators.MutateNodes;
 import org.apache.ignite.ml.encog.evolution.operators.NodeCrossover;
@@ -36,7 +38,8 @@ import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
 import org.apache.ignite.ml.encog.metaoptimizers.BasicStatsCounter;
 import org.apache.ignite.ml.encog.metaoptimizers.LearningRateAdjuster;
-import org.apache.ignite.ml.encog.viewbased.ViewGaTrainerCacheInput;
+import org.apache.ignite.ml.encog.metaoptimizers.TopologyChanger;
+import org.apache.ignite.ml.encog.util.Util;
 import org.apache.ignite.ml.encog.wav.WavReader;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -102,104 +105,7 @@ public class WavTest extends GridCommonAbstractTest {
     }
 
 //    //TODO: WIP
-//    public void test() throws IOException {
-//        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-//
-//        int framesInBatch = 2;
-//        int sampleToRead = 4;
-//        int rate = 44100;
-//
-//        System.out.println("Reading wav...");
-//        List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample" + sampleToRead + "_rate" + rate + ".wav", framesInBatch);
-//        System.out.println("Done.");
-//
-//        int pow = 5;
-//        int lookForwardFor = 1;
-//        int histDepth = (int)Math.pow(2, pow);
-//
-//        int maxSamples = 1_000_000;
-//        loadIntoCache(rawData, histDepth, maxSamples, lookForwardFor);
-//
-//        int n = 50;
-//        int k = 49;
-//
-//        IgniteFunction<Integer, IgniteNetwork> fact = i -> {
-////            IgniteNetwork res = new IgniteNetwork();
-////            res.addLayer(new BasicLayer(null,false, histDepth));
-////            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,n));
-////            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,n));
-////            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,n));
-////            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSoftMax(),false,1));
-////            res.getStructure().finalizeStructure();
-////
-////
-////            res.reset();
-//            return buildTreeLikeNetComplex(pow, lookForwardFor);
-//        };
-//
-//        IgniteFunction<Integer, TreeNetwork> fact1 = i -> new TreeNetwork(pow + 1);
-////
-//        double lr = 0.1;
-//        List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
-//            new NodeCrossover(0.2, "nc"),
-////            new CrossoverFeatures(0.2, "cf"),
-////            new WeightCrossover(0.2, "wc"),
-//            new WeightMutation(0.2, lr, "wm"),
-//            new MutateNodes(10, 0.2, lr, "mn")
-//        );
-////
-//        IgniteFunction<Integer, TopologyChanger.Topology> topologySupplier = (IgniteFunction<Integer, TopologyChanger.Topology>)subPop -> {
-//            Map<LockKey, Double> locks = new HashMap<>();
-//            int toDropCnt = Math.abs(new Random().nextInt()) % k;
-//
-//            int[] toDrop = Util.selectKDistinct(n, Math.abs(new Random().nextInt()) % k);
-//
-//            for (int neuron : toDrop)
-//                locks.put(new LockKey(1, neuron), 0.0);
-//
-//            System.out.println("For population " + subPop + " we dropped " + toDropCnt);
-//
-//            return new TopologyChanger.Topology(locks);
-//        };
-//        int datasetSize = Math.min(maxSamples, rawData.size() - histDepth - 1);
-//        System.out.println("DS size " + datasetSize);
-//        Integer maxTicks = 40;
-//
-//        GaTrainerCacheInput input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
-//            fact,
-//            datasetSize,
-//            60,
-//            evoOps,
-//            30,
-//            // TODO: for the moment each population gets the same dataset, can be tweaked
-//            (in, ignite) -> new TrainingSetScore(in.mlDataSet(0, ignite)),
-//            3,
-//            new AddLeaders(0.2)
-//                .andThen(new LearningRateAdjuster(null, 3))
-//                .andThen(new BasicStatsCounter())
-//            /*.andThen(new LearningRateAdjuster())*/
-//            ,
-//            0.02,
-//            metaoptimizerData -> {
-//                BasicStatsCounter.BasicStats stats = metaoptimizerData.get(0).get2();
-//                int tick = stats.tick();
-//                long msETA = stats.currentGlobalTickDuration() * (maxTicks - tick);
-//                System.out.println("Current global iteration took " + stats.currentGlobalTickDuration() + "ms, ETA to end is " + (msETA / 1000 / 60) + "mins, " + (msETA / 1000 % 60) + " sec,");
-//                return stats.tick() > maxTicks;
-//            }
-//        );
-//
-//        EncogMethodWrapper model = new GATrainer(ignite).train(input);
-//
-////        PersistorRegistry.getInstance().add(new PersistIgniteNetwork());
-////        EncogDirectoryPersistence.saveObject(new File(WAV_LOCAL + "net_" + sampleToRead + ".nn"), model.getM());
-////
-//        calculateError(model, rate, sampleToRead, histDepth, framesInBatch);
-//
-////        System.out.println(NeuralNetworkUtils.printBinaryNetwork((BasicNetwork)model.getM()));
-//    }
-
-    public void testSingleFile() throws IOException {
+    public void test() throws IOException {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         int framesInBatch = 2;
@@ -207,34 +113,62 @@ public class WavTest extends GridCommonAbstractTest {
         int rate = 44100;
 
         System.out.println("Reading wav...");
-        double[] rawData = WavReader.readAsSingleChannel(WAV_LOCAL + "sample" + sampleToRead + "_rate" + rate + "_channel1.wav");
+        List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample" + sampleToRead + "_rate" + rate + ".wav", framesInBatch).batchs();
         System.out.println("Done.");
 
-        int pow = 9;
+        int pow = 6;
         int lookForwardFor = 1;
         int histDepth = (int)Math.pow(2, pow);
 
         int maxSamples = 1_000_000;
-        loadIntoCacheAsSingleEntry(0, rawData);
+        loadIntoCache(rawData, histDepth, maxSamples, lookForwardFor);
 
         int n = 50;
         int k = 49;
 
-        IgniteFunction<Integer, IgniteNetwork> fact = i -> buildTreeLikeNetComplex(pow, lookForwardFor);
+        IgniteFunction<Integer, IgniteNetwork> fact = i -> {
+//            IgniteNetwork res = new IgniteNetwork();
+//            res.addLayer(new BasicLayer(null,false, histDepth));
+//            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,n));
+//            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,n));
+//            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSigmoid(),false,n));
+//            res.addLayer(new BasicLayer(new org.encog.engine.network.activation.ActivationSoftMax(),false,1));
+//            res.getStructure().finalizeStructure();
+//
+//
+//            res.reset();
+            return buildTreeLikeNetComplex(pow, lookForwardFor);
+        };
 
-        int datasetSize = rawData.length - histDepth + 1;
-
+        IgniteFunction<Integer, TreeNetwork> fact1 = i -> new TreeNetwork(pow + 1);
+//
         double lr = 0.1;
         List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
             new NodeCrossover(0.2, "nc"),
+//            new CrossoverFeatures(0.2, "cf"),
+//            new WeightCrossover(0.2, "wc"),
             new WeightMutation(0.2, lr, "wm"),
             new MutateNodes(10, 0.2, lr, "mn")
         );
+//
+        IgniteFunction<Integer, TopologyChanger.Topology> topologySupplier = (IgniteFunction<Integer, TopologyChanger.Topology>)subPop -> {
+            Map<LockKey, Double> locks = new HashMap<>();
+            int toDropCnt = Math.abs(new Random().nextInt()) % k;
 
+            int[] toDrop = Util.selectKDistinct(n, Math.abs(new Random().nextInt()) % k);
+
+            for (int neuron : toDrop)
+                locks.put(new LockKey(1, neuron), 0.0);
+
+            System.out.println("For population " + subPop + " we dropped " + toDropCnt);
+
+            return new TopologyChanger.Topology(locks);
+        };
+        int datasetSize = Math.min(maxSamples, rawData.size() - histDepth - 1);
         System.out.println("DS size " + datasetSize);
         Integer maxTicks = 40;
 
-        ViewGaTrainerCacheInput input = new ViewGaTrainerCacheInput<>(TestTrainingSetCache.NAME,
+        GaTrainerCacheInput input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
             datasetSize,
             60,
@@ -246,21 +180,26 @@ public class WavTest extends GridCommonAbstractTest {
             new AddLeaders(0.2)
                 .andThen(new LearningRateAdjuster(null, 3))
                 .andThen(new BasicStatsCounter())
+            /*.andThen(new LearningRateAdjuster())*/
             ,
-            0.00001,
+            0.02,
             metaoptimizerData -> {
                 BasicStatsCounter.BasicStats stats = metaoptimizerData.get(0).get2();
                 int tick = stats.tick();
                 long msETA = stats.currentGlobalTickDuration() * (maxTicks - tick);
                 System.out.println("Current global iteration took " + stats.currentGlobalTickDuration() + "ms, ETA to end is " + (msETA / 1000 / 60) + "mins, " + (msETA / 1000 % 60) + " sec,");
                 return stats.tick() > maxTicks;
-            },
-            histDepth
+            }
         );
 
         EncogMethodWrapper model = new GATrainer(ignite).train(input);
 
+//        PersistorRegistry.getInstance().add(new PersistIgniteNetwork());
+//        EncogDirectoryPersistence.saveObject(new File(WAV_LOCAL + "net_" + sampleToRead + ".nn"), model.getM());
+//
         calculateError(model, rate, sampleToRead, histDepth, framesInBatch);
+
+//        System.out.println(NeuralNetworkUtils.printBinaryNetwork((BasicNetwork)model.getM()));
     }
 
     /**
@@ -308,15 +247,6 @@ public class WavTest extends GridCommonAbstractTest {
         }
     }
 
-    private void loadIntoCacheAsSingleEntry(int sample, double[] wav) {
-        TestTrainingSetCacheSingleFileEntity.getOrCreate(ignite);
-
-        try (IgniteDataStreamer<Integer, double[]> stmr = ignite.dataStreamer(TestTrainingSetCacheSingleFileEntity.NAME)) {
-            // Stream entries.
-            stmr.addData(sample, wav);
-        }
-    }
-
     private void calculateError(EncogMethodWrapper model, int rate, int sampleNumber, int historyDepth, int framesInBatch) throws IOException {
         List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample" + sampleNumber + "_rate" + rate + ".wav", framesInBatch).batchs();
 
@@ -327,28 +257,6 @@ public class WavTest extends GridCommonAbstractTest {
         Double accuracy = errorsPercentage.apply(model, rawData);
         System.out.println(">>> Errs estimation: " + accuracy);
         System.out.println(">>> Tracing data saved: " + writer);
-    }
-
-    private static IgniteNetwork buildTreeLikeNet(int leavesCountLog) {
-        IgniteNetwork res = new IgniteNetwork();
-        for (int i = leavesCountLog; i >=0; i--)
-            res.addLayer(new BasicLayer(i == 0 ? null : new ActivationSigmoid(), false, (int)Math.pow(2, i)));
-
-        res.getStructure().finalizeStructure();
-
-        for (int i = 0; i < leavesCountLog - 1; i++) {
-            for (int n = 0; n < res.getLayerNeuronCount(i); n += 2) {
-                res.dropOutputsFrom(i, n);
-                res.dropOutputsFrom(i, n + 1);
-
-                res.enableConnection(i, n, n / 2, true);
-                res.enableConnection(i, n + 1, n / 2, true);
-            }
-        }
-
-        res.reset();
-
-        return res;
     }
 
     private static IgniteNetwork buildTreeLikeNetComplex(int leavesCountLog, int lookForwardCnt) {

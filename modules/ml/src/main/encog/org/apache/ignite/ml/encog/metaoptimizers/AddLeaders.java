@@ -42,7 +42,7 @@ public class AddLeaders implements Metaoptimizer<MLMethodGenome, MLMethodGenome>
         return null;
     }
 
-    @Override public MLMethodGenome extractStats(Population population, MLMethodGenome prevLeader) {
+    @Override public MLMethodGenome extractStats(int subPopulation, Population population, MLMethodGenome prevLeader) {
         MLMethodGenome locallyBest = (MLMethodGenome)population.getBestGenome();
         GenomesCache.processForSaving(locallyBest);
         System.out.println("Locally best score is " + locallyBest.getScore());
@@ -61,7 +61,7 @@ public class AddLeaders implements Metaoptimizer<MLMethodGenome, MLMethodGenome>
     }
 
     @Override
-    public MLMethodGeneticAlgorithm statsHandler(MLMethodGeneticAlgorithm train, MLMethodGenome best) {
+    public MLMethodGeneticAlgorithm statsHandler(int subPopulation, MLMethodGeneticAlgorithm train, MLMethodGenome best) {
         Population population = train.getGenetic().getPopulation();
         best.setPopulation(population);
         int size = population.getPopulationSize();

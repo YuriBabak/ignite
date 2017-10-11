@@ -135,7 +135,7 @@ public class ViewGaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U exte
         return evolutionaryOperators;
     }
 
-    @Override public int iterationsPerLocalTick() {
+    @Override public int iterationsPerLocalTick(int subPopulation) {
         return iterationsPerLocalTick;
     }
 

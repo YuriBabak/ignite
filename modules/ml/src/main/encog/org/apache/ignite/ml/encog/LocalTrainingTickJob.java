@@ -72,10 +72,10 @@ public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJ
             int subPopulationNum = entry.getKey();
 
             GATrainerInput<? extends MLMethod, S, U> input = InputCache.getOrCreate(ignite).get(trainingUuid);
-            MLMethodGeneticAlgorithm training = input.metaoptimizer().statsHandler(initTraining(population, subPopulationNum, ignite), Cloner.deepCopy(data.get(subPopulationNum)));
+            MLMethodGeneticAlgorithm training = input.metaoptimizer().statsHandler(subPopulationNum, initTraining(population, subPopulationNum, ignite), Cloner.deepCopy(data.get(subPopulationNum)));
 
             int i = 0;
-            while (i < input.iterationsPerLocalTick()) {
+            while (i < input.iterationsPerLocalTick(subPopulationNum)) {
                 training.iteration();
                 i++;
             }
@@ -87,7 +87,7 @@ public class LocalTrainingTickJob<S, U extends Serializable> implements ComputeJ
             training.finishTraining();
 
             // TODO: pass real context.
-            res.put(subPopulationNum, input.metaoptimizer().extractStats(training.getGenetic().getPopulation(), data.get(subPopulationNum)));
+            res.put(subPopulationNum, input.metaoptimizer().extractStats(subPopulationNum, training.getGenetic().getPopulation(), data.get(subPopulationNum)));
 
             int oldSize = GenomesCache.getOrCreate(ignite).size();
 

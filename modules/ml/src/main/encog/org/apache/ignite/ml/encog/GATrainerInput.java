@@ -67,7 +67,7 @@ public interface GATrainerInput<T extends MLMethod & MLEncodable, S, U extends S
     /**
      * Get number of local iterations between {@link Metaoptimizer} syncs.
      */
-    default int iterationsPerLocalTick() {
+    default int iterationsPerLocalTick(int subPopulation) {
         return 1;
     }
 

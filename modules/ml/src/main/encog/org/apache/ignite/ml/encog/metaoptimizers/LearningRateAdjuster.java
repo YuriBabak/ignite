@@ -60,7 +60,7 @@ public class LearningRateAdjuster implements Metaoptimizer<LearningRateAdjuster.
         return new LearningRateStats(0.1);
     }
 
-    @Override public LearningRateStats extractStats(Population population, LearningRateStats prevStats) {
+    @Override public LearningRateStats extractStats(int subPopulation, Population population, LearningRateStats prevStats) {
         double curScore = population.getBestGenome().getScore();
         return prevStats.update(curScore);
     }
@@ -70,7 +70,7 @@ public class LearningRateAdjuster implements Metaoptimizer<LearningRateAdjuster.
         return stats;
     }
 
-    @Override public MLMethodGeneticAlgorithm statsHandler(MLMethodGeneticAlgorithm train, LearningRateStats stats) {
+    @Override public MLMethodGeneticAlgorithm statsHandler(int subPopulations, MLMethodGeneticAlgorithm train, LearningRateStats stats) {
         double dispIdx = stats.scoresVar.m2() / stats.scoresVar.mean();
 
         System.out.println("Disp idx " + dispIdx);

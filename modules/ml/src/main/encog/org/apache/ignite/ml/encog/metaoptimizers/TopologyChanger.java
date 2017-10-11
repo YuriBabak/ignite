@@ -63,7 +63,7 @@ public class TopologyChanger implements Metaoptimizer<TopologyChanger.ScoredTopo
         return topologySupplier.apply(populationNum);
     }
 
-    @Override public ScoredTopology extractStats(Population population, Topology data) {
+    @Override public ScoredTopology extractStats(int subPopulation, Population population, Topology data) {
         IgniteNetwork phenotype = (IgniteNetwork)(((MLMethodGenome)population.getBestGenome()).getPhenotype());
 
         return new ScoredTopology(population.getBestGenome().getScore(), phenotype.getLearningMask());
@@ -103,7 +103,7 @@ public class TopologyChanger implements Metaoptimizer<TopologyChanger.ScoredTopo
     }
 
     @Override
-    public MLMethodGeneticAlgorithm statsHandler(MLMethodGeneticAlgorithm train, Topology data) {
+    public MLMethodGeneticAlgorithm statsHandler(int subPopulation, MLMethodGeneticAlgorithm train, Topology data) {
         for (Genome genome : train.getGenetic().getPopulation().getSpecies().get(0).getMembers()) {
             IgniteNetwork phenotype = (IgniteNetwork)(((MLMethodGenome)genome).getPhenotype());
 

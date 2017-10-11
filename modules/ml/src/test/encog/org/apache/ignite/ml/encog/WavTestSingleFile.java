@@ -45,7 +45,7 @@ import org.encog.ml.data.basic.BasicMLData;
 import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.TrainingSetScore;
 
-public class WavTestSibgleFile extends GridCommonAbstractTest {
+public class WavTestSingleFile extends GridCommonAbstractTest {
     private static final int NODE_COUNT = 3;
     private static String WAV_LOCAL = "/home/enny/Downloads/wav/";
 
@@ -55,7 +55,7 @@ public class WavTestSibgleFile extends GridCommonAbstractTest {
     /**
      * Default constructor.
      */
-    public WavTestSibgleFile() {
+    public WavTestSingleFile() {
         super(false);
     }
 
@@ -141,7 +141,7 @@ public class WavTestSibgleFile extends GridCommonAbstractTest {
                 .andThen(new LearningRateAdjuster(null, 3))
                 .andThen(new BasicStatsCounter())
             ,
-            0.00001,
+            0.01,
             metaoptimizerData -> {
                 BasicStatsCounter.BasicStats stats = metaoptimizerData.get(0).get2();
                 int tick = stats.tick();

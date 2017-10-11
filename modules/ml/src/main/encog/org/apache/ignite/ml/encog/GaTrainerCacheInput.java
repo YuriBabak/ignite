@@ -44,12 +44,12 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
     private final IgniteBiFunction<GATrainerInput, Ignite, CalculateScore> scoreCalculatorSupplier;
     private final int speciesCount;
     private final IgnitePredicate<Map<Integer, U>> stopCriterion;
+    private final IgniteFunction<Integer, Integer> localTickCountStrategy;
     private IgniteFunction<Integer, T> mf;
     private String cacheName;
     private int size;
     private int populationSize;
     private List<IgniteEvolutionaryOperator> evolutionaryOperators;
-    private int iterationsPerLocalTick;
     private Metaoptimizer<S, U> metaoptimizer;
     private double batchPercentage;
 
@@ -71,7 +71,7 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
         int size,
         int populationSize,
         List<IgniteEvolutionaryOperator> evolutionaryOperators,
-        int iterationsPerLocalTick,
+        IgniteFunction<Integer, Integer> localTickCountStrategy,
         IgniteBiFunction<GATrainerInput, Ignite, CalculateScore> scoreCalculator,
         int speciesCount,
         Metaoptimizer<S, U> metaoptimizer,
@@ -82,7 +82,7 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
         this.size = size;
         this.populationSize = populationSize;
         this.evolutionaryOperators = evolutionaryOperators;
-        this.iterationsPerLocalTick = iterationsPerLocalTick;
+        this.localTickCountStrategy = localTickCountStrategy;
         this.scoreCalculatorSupplier = scoreCalculator;
         this.speciesCount = speciesCount;
         this.metaoptimizer = metaoptimizer;
@@ -135,8 +135,8 @@ public class GaTrainerCacheInput<T extends MLMethod & MLEncodable, S, U extends 
         return evolutionaryOperators;
     }
 
-    @Override public int iterationsPerLocalTick() {
-        return iterationsPerLocalTick;
+    @Override public int iterationsPerLocalTick(int subPopulation) {
+        return localTickCountStrategy.apply(subPopulation);
     }
 
     @Override public CalculateScore scoreCalculator(Ignite ignite) {

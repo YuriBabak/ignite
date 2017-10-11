@@ -50,6 +50,7 @@ import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.basic.BasicMLData;
 import org.encog.ml.data.basic.BasicMLDataPair;
+import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.TrainingSetScore;
 
@@ -116,7 +117,7 @@ public class WavTest extends GridCommonAbstractTest {
         List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample" + sampleToRead + "_rate" + rate + ".wav", framesInBatch).batchs();
         System.out.println("Done.");
 
-        int pow = 6;
+        int pow = 7;
         int lookForwardFor = 1;
         int histDepth = (int)Math.pow(2, pow);
 
@@ -137,7 +138,7 @@ public class WavTest extends GridCommonAbstractTest {
 //
 //
 //            res.reset();
-            return buildTreeLikeNetComplex(pow, lookForwardFor);
+            return buildTreeLikeNetComplex(pow - (i % 3), lookForwardFor);
         };
 
         IgniteFunction<Integer, TreeNetwork> fact1 = i -> new TreeNetwork(pow + 1);
@@ -173,9 +174,9 @@ public class WavTest extends GridCommonAbstractTest {
             datasetSize,
             60,
             evoOps,
-            30,
+            sp -> 30 * (int)Math.pow(2, sp), // tree depth drops with grow of subpopulation number, so we can do twice more local ticks with each level drop.
             // TODO: for the moment each population gets the same dataset, can be tweaked
-            (in, ignite) -> new TrainingSetScore(in.mlDataSet(0, ignite)),
+            (in, ignite) -> new AdaptableTrainingScore(in.mlDataSet(0, ignite)),
             3,
             new AddLeaders(0.2)
                 .andThen(new LearningRateAdjuster(null, 3))
@@ -192,12 +193,16 @@ public class WavTest extends GridCommonAbstractTest {
             }
         );
 
+
+
         EncogMethodWrapper model = new GATrainer(ignite).train(input);
+
+        System.out.println("Best history depth " + ((BasicNetwork)model.getM()).getLayerNeuronCount(0));
 
 //        PersistorRegistry.getInstance().add(new PersistIgniteNetwork());
 //        EncogDirectoryPersistence.saveObject(new File(WAV_LOCAL + "net_" + sampleToRead + ".nn"), model.getM());
 //
-        calculateError(model, rate, sampleToRead, histDepth, framesInBatch);
+        calculateError(model, rate, sampleToRead, ((BasicNetwork)model.getM()).getLayerNeuronCount(0), framesInBatch);
 
 //        System.out.println(NeuralNetworkUtils.printBinaryNetwork((BasicNetwork)model.getM()));
     }

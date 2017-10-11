@@ -28,12 +28,12 @@ import org.encog.ml.genetic.MLMethodGeneticAlgorithm;
 public interface Metaoptimizer<S, U extends Serializable> extends Serializable {
     U initialData(int populationNum);
 
-    S extractStats(Population population, U data);
+    S extractStats(int subPopulation, Population population, U data);
 
     // At i-th position of the list contained data which should be sent to i-th iteration.
     Map<Integer, U> statsAggregator(Map<Integer, S> stats);
 
-    MLMethodGeneticAlgorithm statsHandler(MLMethodGeneticAlgorithm train, U data);
+    MLMethodGeneticAlgorithm statsHandler(int subPopulation, MLMethodGeneticAlgorithm train, U data);
 
     /**
      * Convinient way to combine multiple metaoptimizers in a chain.
@@ -49,8 +49,8 @@ public interface Metaoptimizer<S, U extends Serializable> extends Serializable {
                 return new IgniteBiTuple<>(outerThis.initialData(subPopulation), op.initialData(subPopulation));
             }
 
-            @Override public IgniteBiTuple<S, S1> extractStats(Population population, IgniteBiTuple<U, U1> data) {
-                return new IgniteBiTuple<>(outerThis.extractStats(population, Optional.ofNullable(data).map(IgniteBiTuple::get1).orElse(null)), op.extractStats(population, Optional.ofNullable(data).map(IgniteBiTuple::get2).orElse(null)));
+            @Override public IgniteBiTuple<S, S1> extractStats(int subPopulation, Population population, IgniteBiTuple<U, U1> data) {
+                return new IgniteBiTuple<>(outerThis.extractStats(subPopulation, population, Optional.ofNullable(data).map(IgniteBiTuple::get1).orElse(null)), op.extractStats(subPopulation, population, Optional.ofNullable(data).map(IgniteBiTuple::get2).orElse(null)));
             }
 
             @Override public Map<Integer, IgniteBiTuple<U, U1>> statsAggregator(Map<Integer, IgniteBiTuple<S, S1>> stats) {
@@ -82,8 +82,8 @@ public interface Metaoptimizer<S, U extends Serializable> extends Serializable {
             }
 
             @Override
-            public MLMethodGeneticAlgorithm statsHandler(MLMethodGeneticAlgorithm train, IgniteBiTuple<U, U1> data) {
-                return op.statsHandler(outerThis.statsHandler(train, data.get1()), data.get2());
+            public MLMethodGeneticAlgorithm statsHandler(int subPopulation, MLMethodGeneticAlgorithm train, IgniteBiTuple<U, U1> data) {
+                return op.statsHandler(subPopulation, outerThis.statsHandler(subPopulation, train, data.get1()), data.get2());
             }
         };
     }

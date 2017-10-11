@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.encog;
 
 import java.io.Serializable;
-import java.util.Objects;
 import java.util.Random;
 import org.encog.mathutil.BoundMath;
 import org.encog.ml.MLEncodable;
@@ -82,22 +81,22 @@ public class TreeNetwork implements MLEncodable, MLMethod, MLRegression, Seriali
 
         for (int l = 0; l < depth - 1; l++) {
             int neuronsInLayer = (int)Math.pow(2, depth - l - 1);
-            int offsetInput = compute.length - ((int)Math.pow(2, depth - l) - 1);
-            int offsetOutput = compute.length - ((int)Math.pow(2, depth - l - 1) - 1);
+            int offInput = compute.length - ((int)Math.pow(2, depth - l) - 1);
+            int offOutput = compute.length - ((int)Math.pow(2, depth - l - 1) - 1);
             // l = 2, depth = 4
             // 8 4 2 1
             // 2^{4} - 1 - (2^{4 - 2} - 1) = 2^4 - 2^2 = 16 - 4;
 
             for (int n = 0; n < neuronsInLayer; n += 2) {
-                double x1 = compute[offsetInput + n];
-                double x2 = compute[offsetInput + n + 1];
+                double x1 = compute[offInput + n];
+                double x2 = compute[offInput + n + 1];
 
-                double w1 = weights[offsetInput + n];
-                double w2 = weights[offsetInput + n + 1];
+                double w1 = weights[offInput + n];
+                double w2 = weights[offInput + n + 1];
 
                 double z = x1 * w1 + x2 * w2;
 
-                compute[offsetOutput + n / 2] = 1.0 / (1.0 + BoundMath.exp(-1 * z));
+                compute[offOutput + n / 2] = 1.0 / (1.0 + BoundMath.exp(-1 * z));
             }
         }
 

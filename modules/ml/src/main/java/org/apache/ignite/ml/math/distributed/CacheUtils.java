@@ -552,6 +552,6 @@ public class CacheUtils {
      * @param <A> Type returned by the callable.
      */
     public static <A> Collection<A> bcast(String cacheName, IgniteCallable<A> call) {
-        return ignite().compute(ignite().cluster().forCacheNodes(cacheName)).broadcast(call);
+        return ignite().compute(ignite().cluster().forDataNodes(cacheName)).broadcast(call);
     }
 }

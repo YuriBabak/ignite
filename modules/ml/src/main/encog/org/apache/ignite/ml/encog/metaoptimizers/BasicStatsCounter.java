@@ -29,8 +29,9 @@ public class BasicStatsCounter implements Metaoptimizer<BasicStatsCounter.BasicS
     }
 
     @Override
-    public BasicStats extractStats(Population population, BasicStats data) {
-        return new BasicStats(population.getBestGenome().getScore(), data.tick + 1);
+    public BasicStats extractStats(int subPopulation, Population population, BasicStats data) {
+        data.incrTick();
+        return data;
     }
 
     @Override public Map<Integer, BasicStats> statsAggregator(
@@ -52,7 +53,7 @@ public class BasicStatsCounter implements Metaoptimizer<BasicStatsCounter.BasicS
     }
 
     @Override
-    public MLMethodGeneticAlgorithm statsHandler(MLMethodGeneticAlgorithm train, BasicStats data) {
+    public MLMethodGeneticAlgorithm statsHandler(int subPopulation, MLMethodGeneticAlgorithm train, BasicStats data) {
         return train;
     }
 
@@ -82,6 +83,10 @@ public class BasicStatsCounter implements Metaoptimizer<BasicStatsCounter.BasicS
 
         public int tick() {
             return tick;
+        }
+
+        public void incrTick() {
+            tick++;
         }
 
         public long prevGlobalTickTime() {

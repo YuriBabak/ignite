@@ -19,9 +19,11 @@ import org.apache.ignite.ml.encog.evolution.operators.WeightMutation;
 import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
 import org.apache.ignite.ml.encog.metaoptimizers.BasicStatsCounter;
 import org.apache.ignite.ml.encog.metaoptimizers.LearningRateAdjuster;
+import org.apache.ignite.ml.encog.util.GeneratedWavWriter;
 import org.apache.ignite.ml.encog.util.MSECalculator;
 import org.apache.ignite.ml.encog.util.PredictedWavWriter;
 import org.apache.ignite.ml.encog.util.SequentialRunner;
+import org.apache.ignite.ml.encog.util.WavTracer;
 import org.apache.ignite.ml.encog.wav.WavReader;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.encog.engine.network.activation.ActivationSigmoid;
@@ -31,13 +33,14 @@ import org.jetbrains.annotations.NotNull;
 
 public class WavGAExample {
     private static final String OUTPUT_PRED_WAV_DEFAULT = "~/output.wav";
+    private static double DEFAULT_BATCH_PERCENTAGE = 0.2;
     private static int HISTORY_DEPTH_LOG_DEFAULT = 5;
     private static int MAX_TICKS_DEFAULT = 40;
     private static int FRAMES_IN_BATCH_DEFAULT = 2;
     private static int MAX_SAMPLES_DEFAULT = 1_000_000;
+    private static int SUBPOPS_DEFAULT = 3;
 
-    public static void main(String[] args){
-
+    public static void main(String[] args) {
         String trainingSample = "~/wav/sample.4";
         String dataSample = "~/wav/sample.4";
 
@@ -50,7 +53,10 @@ public class WavGAExample {
         int framesInBatch;
         int maxTicks;
         int histDepth;
+        int subpops;
         String outputWavPath;
+        String outputGenWavPath;
+        double batchPercentage;
 
         try {
             // parse the command line arguments
@@ -62,6 +68,9 @@ public class WavGAExample {
             maxTicks = getIntOrDefault("max_ticks", MAX_TICKS_DEFAULT, line);
             histDepth = (int)Math.pow(2, histDepthLog);
             outputWavPath = line.getOptionValue("out", OUTPUT_PRED_WAV_DEFAULT);
+            outputGenWavPath = line.getOptionValue("out_gen");
+            subpops = getIntOrDefault("subpops", SUBPOPS_DEFAULT, line);
+            batchPercentage = getDoubleOrDefault("ds_part", DEFAULT_BATCH_PERCENTAGE, line);
 
             trainingSample = line.getOptionValue("tr_sample");
             dataSample = line.getOptionValue("data_samples");
@@ -95,8 +104,6 @@ public class WavGAExample {
 
             List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
                 new NodeCrossover(0.2, "nc"),
-//              new CrossoverFeatures(0.2, "cf"),
-//              new WeightCrossover(0.2, "wc"),
                 new WeightMutation(0.2, lr, "wm"),
                 new MutateNodes(10, 0.2, lr, "mn")
             );
@@ -109,13 +116,13 @@ public class WavGAExample {
                 datasetSize,
                 60,
                 evoOps,
-                30,
-                (in, ign) -> new TrainingSetScore(in.mlDataSet(0, ign)),
-                4,
+                sp -> 30 * (int)Math.pow(2, sp), // tree depth drops with grow of subpopulation number, so we can do twice more local ticks with each level drop.
+                (in, ign) -> new AdaptableTrainingScore(in.mlDataSet(0, ign)),
+                subpops,
                 new AddLeaders(0.2)
-                    .andThen(new LearningRateAdjuster(null, 3))
+                    .andThen(new LearningRateAdjuster(null, subpops))
                     .andThen(new BasicStatsCounter()),
-                0.2,
+                batchPercentage,
                 metaoptimizerData -> {
                     BasicStatsCounter.BasicStats stats = metaoptimizerData.get(0).get2();
                     int tick = stats.tick();
@@ -132,11 +139,19 @@ public class WavGAExample {
 
             SamplesCache.getOrCreate(ignite).destroy();
 
-
             SequentialRunner runner = new SequentialRunner();
 
+            int size = inputWav.batchs().size();
+            int rate = (int)(inputWav.file().getSampleRate() / inputWav.file().getNumChannels());
+
             runner.add(new MSECalculator());
-            runner.add(new PredictedWavWriter(outputWavPath, inputWav.batchs().size(), (int)(inputWav.file().getSampleRate() / inputWav.file().getNumChannels())));
+            runner.add(new PredictedWavWriter(outputWavPath, size, rate));
+            runner.add(new WavTracer());
+
+            if (outputGenWavPath != null) {
+                System.out.println("Added generating in " + outputGenWavPath);
+                runner.add(new GeneratedWavWriter(mdl.getM(), outputGenWavPath, size, rate));
+            }
 
             runner.run(mdl, histDepth, framesInBatch, dataSample);
         }
@@ -147,6 +162,10 @@ public class WavGAExample {
 
     private static int getIntOrDefault(String optionName, int def, CommandLine line) {
         return line.hasOption(optionName) ? Integer.parseInt(line.getOptionValue(optionName)) : def;
+    }
+
+    private static double getDoubleOrDefault(String optionName, double def, CommandLine line) {
+        return line.hasOption(optionName) ? Double.parseDouble(line.getOptionValue(optionName)) : def;
     }
 
     /**
@@ -180,8 +199,17 @@ public class WavGAExample {
         Option igniteConfOpt = OptionBuilder.withArgName("cfg").withLongOpt("cfg").hasArg().isRequired(false)
             .withDescription("path to ignite config, default is examples/config/example-ml-nn.xml").create();
 
+        Option subPopsOpt = OptionBuilder.withArgName("subpops").withLongOpt("subpops").hasArg().isRequired(false)
+            .withDescription("subpopulations count " + SUBPOPS_DEFAULT).create();
+
         Option wavOutOpt = OptionBuilder.withArgName("out").withLongOpt("out").hasArg().isRequired(false)
             .withDescription("path to predicted wav, default is " + OUTPUT_PRED_WAV_DEFAULT).create();
+
+        Option wavGenOutOpt = OptionBuilder.withArgName("out_gen").withLongOpt("out_gen").hasArg().isRequired(false)
+            .withDescription("path of generated wav").create();
+
+        Option batchPercentageOpt = OptionBuilder.withArgName("ds_part").withLongOpt("ds_part").hasArg().isRequired(false)
+            .withDescription("Part of dataset which is taken for each global iteration. default value is " + DEFAULT_BATCH_PERCENTAGE).create();
 
         options.addOption(histDepthOpt);
         options.addOption(framesInBatchOpt);
@@ -191,20 +219,24 @@ public class WavGAExample {
         options.addOption(maxSamplesOpt);
         options.addOption(wavOutOpt);
         options.addOption(maxTicksOpt);
+        options.addOption(subPopsOpt);
+        options.addOption(wavGenOutOpt);
+        options.addOption(batchPercentageOpt);
 
         return options;
     }
 
     /** */
-    @NotNull private static IgniteFunction<Integer, IgniteNetwork> getNNFactory(int leavesCountLog) {
+    @NotNull private static IgniteFunction<Integer, IgniteNetwork> getNNFactory(int maxLeavesCountLog) {
         return subPopulation -> {
+            int treeDepth = maxLeavesCountLog - subPopulation;
             IgniteNetwork res = new IgniteNetwork();
-            for (int i = leavesCountLog; i >= 0; i--)
+            for (int i = treeDepth; i >= 0; i--)
                 res.addLayer(new BasicLayer(i == 0 ? null : new ActivationSigmoid(), false, (int)Math.pow(2, i)));
 
             res.getStructure().finalizeStructure();
 
-            for (int i = 0; i < leavesCountLog - 1; i++) {
+            for (int i = 0; i < treeDepth - 1; i++) {
                 for (int n = 0; n < res.getLayerNeuronCount(i); n += 2) {
                     res.dropOutputsFrom(i, n);
                     res.dropOutputsFrom(i, n + 1);

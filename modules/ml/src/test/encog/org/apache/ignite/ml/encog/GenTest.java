@@ -151,7 +151,7 @@ new CrossoverFeatures(0.1, "cf"),
             mnist.getFst().length,
             60,
             evoOps,
-            30,
+            sp -> 30 * (int)Math.pow(2, sp), // tree depth drops with grow of subpopulation number, so we can do twice more local ticks with each level drop.,
             (in, ignite) -> new TrainingSetScore(in.mlDataSet(0, ignite)),
             3,
             new AddLeaders(0.2)

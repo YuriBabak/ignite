@@ -143,7 +143,7 @@ public class GATrainer<S, U extends Serializable> implements GroupTrainer<MLData
 
             train.finishTraining();
 
-            res.put(subPopulation, input.metaoptimizer().extractStats(train.getGenetic().getPopulation(), input.metaoptimizer().initialData(subPopulation)));
+            res.put(subPopulation, input.metaoptimizer().extractStats(subPopulation, train.getGenetic().getPopulation(), input.metaoptimizer().initialData(subPopulation)));
 
 //            Encog.getInstance().shutdown();
 

@@ -46,8 +46,7 @@ public class SequentialRunner {
 
         int samplesCnt = ds.size();
 
-        for (int i = histDepth; i < samplesCnt-1; i++){
-
+        for (int i = histDepth; i < samplesCnt - 1; i++){
             BasicMLData dataSetEntry = new BasicMLData(ds.subList(i - histDepth, i).stream().map(doubles ->
                 (Arrays.stream(doubles).sum() / doubles.length + 1) / channels).mapToDouble(d -> d).toArray());
 

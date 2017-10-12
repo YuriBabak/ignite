@@ -31,7 +31,7 @@ public class SamplesCache {
             // Stream entries.
             int samplesCnt = wav.size();
             System.out.println("File contains " + samplesCnt + " samples...");
-            for (int i = histDepth; i < samplesCnt - 1 && (i - histDepth) < maxSamples; i++) {
+            for (int i = histDepth; i < samplesCnt - 1 && (i - histDepth) / stepSize < maxSamples; i++) {
                 if ((i - histDepth) % stepSize != 0)
                     continue;
                 // The mean is calculated inefficient
@@ -42,10 +42,11 @@ public class SamplesCache {
                 double[] lable = {(Arrays.stream(rawLable).sum() / rawLable.length + 1) / 2};
                 BasicMLDataPair val = new BasicMLDataPair(dataSetEntry, new BasicMLData(lable));
 
-                stmr.addData(i - histDepth, val);
+                int sampleNum = (i - histDepth) / stepSize;
+                stmr.addData(sampleNum, val);
 
-                if (i % 5000 == 0)
-                    System.out.println("Loaded " + i + ", input: " + val.getInput().size() + " label: " + val.getIdeal().size());
+                if (sampleNum % 5000 == 0)
+                    System.out.println("Loaded " + sampleNum + ", input: " + val.getInput().size() + " label: " + val.getIdeal().size());
             }
             System.out.println("Done");
         }

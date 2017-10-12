@@ -38,6 +38,15 @@ public class WavTracer implements SequentialOperation {
     /** */
     private final Path path = Paths.get(tmp.toURI());
 
+    private int curSample;
+    private int sampleStep;
+    private int maxSamples;
+
+    public WavTracer(int sampleStep, int maxSamples) {
+        this.sampleStep = sampleStep;
+        this.maxSamples = maxSamples;
+    }
+
     @Override public void init(double[] initial) {
         writeHeader();
     }
@@ -45,13 +54,18 @@ public class WavTracer implements SequentialOperation {
     @Override public void handle(double[] groundTruth, double[] predicted) {
         assert groundTruth.length == predicted.length;
 
-        for (int i = 0; i < groundTruth.length; i++)
-            try {
-                writeResults(formatResults(groundTruth[i],predicted[i]));
-            }
-            catch (IOException e) {
-                throw new RuntimeException("Failed to write ");
-            }
+        if (curSample % sampleStep == 0 && (curSample / sampleStep < maxSamples)) {
+
+            for (int i = 0; i < groundTruth.length; i++)
+                try {
+                    writeResults(formatResults(groundTruth[i], predicted[i]));
+                }
+                catch (IOException e) {
+                    throw new RuntimeException("Failed to write ");
+                }
+        }
+
+        curSample++;
     }
 
     @Override public void finish() {

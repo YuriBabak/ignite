@@ -27,8 +27,8 @@ import org.apache.ignite.ml.encog.util.WavTracer;
 import org.apache.ignite.ml.encog.wav.WavReader;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.encog.engine.network.activation.ActivationSigmoid;
+import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
-import org.encog.neural.networks.training.TrainingSetScore;
 import org.jetbrains.annotations.NotNull;
 
 public class WavGAExample {
@@ -116,7 +116,7 @@ public class WavGAExample {
                 datasetSize,
                 60,
                 evoOps,
-                sp -> 30 * (int)Math.pow(2, sp), // tree depth drops with grow of subpopulation number, so we can do twice more local ticks with each level drop.
+                sp -> 30 * (int)Math.pow(2, sp % 3), // tree depth drops with grow of subpopulation number, so we can do twice more local ticks with each level drop.
                 (in, ign) -> new AdaptableTrainingScore(in.mlDataSet(0, ign)),
                 subpops,
                 new AddLeaders(0.2)
@@ -146,14 +146,17 @@ public class WavGAExample {
 
             runner.add(new MSECalculator());
             runner.add(new PredictedWavWriter(outputWavPath, size, rate));
-            runner.add(new WavTracer());
+            runner.add(new WavTracer(100, 1_000_000));
 
             if (outputGenWavPath != null) {
                 System.out.println("Added generating in " + outputGenWavPath);
                 runner.add(new GeneratedWavWriter(mdl.getM(), outputGenWavPath, size, rate));
             }
 
-            runner.run(mdl, histDepth, framesInBatch, dataSample);
+            int bestMdlHistDepth = ((BasicNetwork)mdl.getM()).getLayerNeuronCount(0);
+
+            System.out.println("Best model history depth: " + bestMdlHistDepth);
+            runner.run(mdl, bestMdlHistDepth, framesInBatch, dataSample);
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -229,7 +232,7 @@ public class WavGAExample {
     /** */
     @NotNull private static IgniteFunction<Integer, IgniteNetwork> getNNFactory(int maxLeavesCountLog) {
         return subPopulation -> {
-            int treeDepth = maxLeavesCountLog - subPopulation;
+            int treeDepth = maxLeavesCountLog - (subPopulation % 3);
             IgniteNetwork res = new IgniteNetwork();
             for (int i = treeDepth; i >= 0; i--)
                 res.addLayer(new BasicLayer(i == 0 ? null : new ActivationSigmoid(), false, (int)Math.pow(2, i)));

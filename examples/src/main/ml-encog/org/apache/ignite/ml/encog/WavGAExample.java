@@ -39,6 +39,7 @@ public class WavGAExample {
     private static int FRAMES_IN_BATCH_DEFAULT = 2;
     private static int MAX_SAMPLES_DEFAULT = 1_000_000;
     private static int SUBPOPS_DEFAULT = 3;
+    private static int STEP_SIZE_DEFAULT = 1;
 
     public static void main(String[] args) {
         String trainingSample = "~/wav/sample.4";
@@ -56,6 +57,7 @@ public class WavGAExample {
         int subpops;
         String outputWavPath;
         String outputGenWavPath;
+        int stepSize;
         double batchPercentage;
 
         try {
@@ -71,6 +73,7 @@ public class WavGAExample {
             outputGenWavPath = line.getOptionValue("out_gen");
             subpops = getIntOrDefault("subpops", SUBPOPS_DEFAULT, line);
             batchPercentage = getDoubleOrDefault("ds_part", DEFAULT_BATCH_PERCENTAGE, line);
+            stepSize =getIntOrDefault("step_size", STEP_SIZE_DEFAULT, line);
 
             trainingSample = line.getOptionValue("tr_sample");
             dataSample = line.getOptionValue("data_samples");
@@ -94,7 +97,7 @@ public class WavGAExample {
             System.out.println("Done.");
 
             long before = System.currentTimeMillis();
-            SamplesCache.loadIntoCache(rawData, histDepth, maxSamples, SamplesCache.CACHE_NAME, ignite);
+            SamplesCache.loadIntoCache(rawData, histDepth, maxSamples, stepSize, SamplesCache.CACHE_NAME, ignite);
 
             IgniteFunction<Integer, IgniteNetwork> fact = getNNFactory(histDepthLog);
 
@@ -108,7 +111,7 @@ public class WavGAExample {
                 new MutateNodes(10, 0.2, lr, "mn")
             );
 
-            int datasetSize = Math.min(maxSamples, rawData.size() - histDepth - 1);
+            int datasetSize = Math.min(maxSamples, (rawData.size() - histDepth - 1) / stepSize);
 
             System.out.println("DS size " + datasetSize);
             GaTrainerCacheInput input = new GaTrainerCacheInput<>(SamplesCache.CACHE_NAME,
@@ -214,6 +217,9 @@ public class WavGAExample {
         Option batchPercentageOpt = OptionBuilder.withArgName("ds_part").withLongOpt("ds_part").hasArg().isRequired(false)
             .withDescription("Part of dataset which is taken for each global iteration. default value is " + DEFAULT_BATCH_PERCENTAGE).create();
 
+        Option stepSizeOpt = OptionBuilder.withArgName("step_size").withLongOpt("step_size").hasArg().isRequired(false)
+            .withDescription("Step size of samples window " + STEP_SIZE_DEFAULT).create();
+
         options.addOption(histDepthOpt);
         options.addOption(framesInBatchOpt);
         options.addOption(trainingSamplesOpt);
@@ -225,6 +231,7 @@ public class WavGAExample {
         options.addOption(subPopsOpt);
         options.addOption(wavGenOutOpt);
         options.addOption(batchPercentageOpt);
+        options.addOption(stepSizeOpt);
 
         return options;
     }

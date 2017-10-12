@@ -22,7 +22,7 @@ public class SamplesCache {
      * @param wav Wav.
      * @param histDepth History depth.
      */
-    public static void loadIntoCache(List<double[]> wav, int histDepth, int maxSamples, String cacheName, Ignite ignite) {
+    public static void loadIntoCache(List<double[]> wav, int histDepth, int maxSamples, int stepSize, String cacheName, Ignite ignite) {
         IgniteCache<Integer, MLDataPair> cache = getOrCreate(ignite);
         System.out.println("initial cache size is " + cache.size());
 
@@ -30,8 +30,10 @@ public class SamplesCache {
             stmr.allowOverwrite(true);
             // Stream entries.
             int samplesCnt = wav.size();
-            System.out.println("Loading " + samplesCnt + " samples into cache...");
+            System.out.println("File contains " + samplesCnt + " samples...");
             for (int i = histDepth; i < samplesCnt - 1 && (i - histDepth) < maxSamples; i++) {
+                if ((i - histDepth) % stepSize != 0)
+                    continue;
                 // The mean is calculated inefficient
                 BasicMLData dataSetEntry = new BasicMLData(wav.subList(i - histDepth, i).stream().map(doubles ->
                     (Arrays.stream(doubles).sum() / doubles.length + 1) / 2).mapToDouble(d -> d).toArray());

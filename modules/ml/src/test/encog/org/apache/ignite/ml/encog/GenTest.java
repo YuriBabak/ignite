@@ -130,7 +130,7 @@ public class GenTest  extends GridCommonAbstractTest {
             new WeightCrossover(0.2, "wc"),
 new CrossoverFeatures(0.1, "cf"),
 //            new WeightMutation(0.2, 0.05, "wm"),
-            new MutateNodes(10, 0.2, 0.1, "mn"));
+            new MutateNodes(0.1, 0.2, 0.1, "mn"));
 
         IgniteFunction<Integer, TopologyChanger.Topology> topologySupplier = (IgniteFunction<Integer, TopologyChanger.Topology>)subPop -> {
             Map<LockKey, Double> locks = new HashMap<>();

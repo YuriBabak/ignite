@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.encog.util;
 
+import java.util.Arrays;
 import org.apache.ignite.ml.encog.wav.WavReader;
 import org.encog.ml.MLRegression;
 import org.encog.ml.data.MLData;
@@ -56,6 +57,6 @@ public class GeneratedWavWriter implements SequentialOperation {
     }
 
     @Override public void finish() {
-        WavReader.write(outputPath, buff, outputRate);
+        WavReader.write(outputPath, Arrays.stream(buff).map(PredictedWavWriter::toWavRange).toArray(), outputRate);
     }
 }

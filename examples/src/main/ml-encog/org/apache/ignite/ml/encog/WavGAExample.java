@@ -1,5 +1,6 @@
 package org.apache.ignite.ml.encog;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -29,10 +30,13 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.encog.engine.network.activation.ActivationSigmoid;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
+import org.encog.persist.EncogDirectoryPersistence;
+import org.encog.persist.PersistorRegistry;
 import org.jetbrains.annotations.NotNull;
 
 public class WavGAExample {
     private static final String OUTPUT_PRED_WAV_DEFAULT = "~/output.wav";
+    private static final double CSV_DOWNSAMPLE_RATIO = 0.5;
     private static double DEFAULT_BATCH_PERCENTAGE = 0.2;
     private static int HISTORY_DEPTH_LOG_DEFAULT = 5;
     private static int MAX_TICKS_DEFAULT = 40;
@@ -59,6 +63,7 @@ public class WavGAExample {
         String outputGenWavPath;
         int stepSize;
         double batchPercentage;
+        double csvDown;
 
         try {
             // parse the command line arguments
@@ -73,7 +78,8 @@ public class WavGAExample {
             outputGenWavPath = line.getOptionValue("out_gen");
             subpops = getIntOrDefault("subpops", SUBPOPS_DEFAULT, line);
             batchPercentage = getDoubleOrDefault("ds_part", DEFAULT_BATCH_PERCENTAGE, line);
-            stepSize =getIntOrDefault("step_size", STEP_SIZE_DEFAULT, line);
+            stepSize = getIntOrDefault("step_size", STEP_SIZE_DEFAULT, line);
+            csvDown = getDoubleOrDefault("cdr", CSV_DOWNSAMPLE_RATIO, line);
 
             trainingSample = line.getOptionValue("tr_sample");
             dataSample = line.getOptionValue("data_samples");
@@ -108,10 +114,12 @@ public class WavGAExample {
             List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
                 new NodeCrossover(0.2, "nc"),
                 new WeightMutation(0.2, lr, "wm"),
-                new MutateNodes(10, 0.2, lr, "mn")
+                new MutateNodes(0.1, 0.2, lr, "mn")
             );
 
             int datasetSize = Math.min(maxSamples, (rawData.size() - histDepth - 1) / stepSize);
+
+            int baseIter = 30;
 
             System.out.println("DS size " + datasetSize);
             GaTrainerCacheInput input = new GaTrainerCacheInput<>(SamplesCache.CACHE_NAME,
@@ -119,7 +127,7 @@ public class WavGAExample {
                 datasetSize,
                 60,
                 evoOps,
-                sp -> 30 * (int)Math.pow(2, sp % 3), // tree depth drops with grow of subpopulation number, so we can do twice more local ticks with each level drop.
+                sp -> baseIter * (int)Math.pow(2, sp % 3), // tree depth drops with grow of subpopulation number, so we can do twice more local ticks with each level drop.
                 (in, ign) -> new AdaptableTrainingScore(in.mlDataSet(0, ign)),
                 subpops,
                 new AddLeaders(0.2)
@@ -129,12 +137,15 @@ public class WavGAExample {
                 metaoptimizerData -> {
                     BasicStatsCounter.BasicStats stats = metaoptimizerData.get(0).get2();
                     int tick = stats.tick();
-                    long msETA = stats.currentGlobalTickDuration() * (maxTicks - tick);
+                    double ratio = 1.0;
+                    if (tick == 1) {
+                        ratio = baseIter / 3.0; // 3.0 -- count of initial iterations
+                    }
+                    long msETA = (long)(stats.currentGlobalTickDuration() * ratio * (maxTicks - (tick - 1)));
                     System.out.println("Current global iteration took " + stats.currentGlobalTickDuration() + "ms, ETA to end is " + (msETA / 1000 / 60) + "mins, " + (msETA / 1000 % 60) + " sec,");
                     return stats.tick() > maxTicks;
                 }
             );
-
 
             EncogMethodWrapper mdl = new GATrainer<>(ignite).train(input);
 
@@ -149,7 +160,7 @@ public class WavGAExample {
 
             runner.add(new MSECalculator());
             runner.add(new PredictedWavWriter(outputWavPath, size, rate));
-            runner.add(new WavTracer(100, 1_000_000));
+            runner.add(new WavTracer((int)(stepSize * csvDown), 1_000_000));
 
             if (outputGenWavPath != null) {
                 System.out.println("Added generating in " + outputGenWavPath);
@@ -160,6 +171,9 @@ public class WavGAExample {
 
             System.out.println("Best model history depth: " + bestMdlHistDepth);
             runner.run(mdl, bestMdlHistDepth, framesInBatch, dataSample);
+
+            PersistorRegistry.getInstance().add(new PersistIgniteNetwork());
+            EncogDirectoryPersistence.saveObject(new File("/home/artemmalykh/model" + System.currentTimeMillis() + ".nn"), mdl.getM());
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -220,6 +234,9 @@ public class WavGAExample {
         Option stepSizeOpt = OptionBuilder.withArgName("step_size").withLongOpt("step_size").hasArg().isRequired(false)
             .withDescription("Step size of samples window " + STEP_SIZE_DEFAULT).create();
 
+        Option csvDownsampleRatio = OptionBuilder.withArgName("cdr").withLongOpt("csv_downsample_ratio").hasArg().isRequired(false)
+            .withDescription("CSV downsampling ratio " + CSV_DOWNSAMPLE_RATIO).create();
+
         options.addOption(histDepthOpt);
         options.addOption(framesInBatchOpt);
         options.addOption(trainingSamplesOpt);
@@ -232,6 +249,7 @@ public class WavGAExample {
         options.addOption(wavGenOutOpt);
         options.addOption(batchPercentageOpt);
         options.addOption(stepSizeOpt);
+        options.addOption(csvDownsampleRatio);
 
         return options;
     }

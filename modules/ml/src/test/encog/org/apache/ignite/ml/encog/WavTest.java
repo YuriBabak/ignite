@@ -39,7 +39,12 @@ import org.apache.ignite.ml.encog.metaoptimizers.AddLeaders;
 import org.apache.ignite.ml.encog.metaoptimizers.BasicStatsCounter;
 import org.apache.ignite.ml.encog.metaoptimizers.LearningRateAdjuster;
 import org.apache.ignite.ml.encog.metaoptimizers.TopologyChanger;
+import org.apache.ignite.ml.encog.util.GeneratedWavWriter;
+import org.apache.ignite.ml.encog.util.MSECalculator;
+import org.apache.ignite.ml.encog.util.PredictedWavWriter;
+import org.apache.ignite.ml.encog.util.SequentialRunner;
 import org.apache.ignite.ml.encog.util.Util;
+import org.apache.ignite.ml.encog.util.WavTracer;
 import org.apache.ignite.ml.encog.wav.WavReader;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -114,10 +119,12 @@ public class WavTest extends GridCommonAbstractTest {
         int rate = 44100;
 
         System.out.println("Reading wav...");
-        List<double[]> rawData = WavReader.read(WAV_LOCAL + "sample" + sampleToRead + "_rate" + rate + ".wav", framesInBatch).batchs();
+        String dataSample = WAV_LOCAL + "sample" + sampleToRead + "_rate" + rate + ".wav";
+        WavReader.WavInfo inputWav = WavReader.read(dataSample, framesInBatch);
+        List<double[]> rawData = inputWav.batchs();
         System.out.println("Done.");
 
-        int pow = 7;
+        int pow = 8;
         int lookForwardFor = 1;
         int histDepth = (int)Math.pow(2, pow);
 
@@ -149,7 +156,7 @@ public class WavTest extends GridCommonAbstractTest {
 //            new CrossoverFeatures(0.2, "cf"),
 //            new WeightCrossover(0.2, "wc"),
             new WeightMutation(0.2, lr, "wm"),
-            new MutateNodes(10, 0.2, lr, "mn")
+            new MutateNodes(0.1, 0.2, lr, "mn")
         );
 //
         IgniteFunction<Integer, TopologyChanger.Topology> topologySupplier = (IgniteFunction<Integer, TopologyChanger.Topology>)subPop -> {
@@ -167,7 +174,7 @@ public class WavTest extends GridCommonAbstractTest {
         };
         int datasetSize = Math.min(maxSamples, rawData.size() - histDepth - 1);
         System.out.println("DS size " + datasetSize);
-        Integer maxTicks = 40;
+        Integer maxTicks = 10;
 
         GaTrainerCacheInput input = new GaTrainerCacheInput<>(TestTrainingSetCache.NAME,
             fact,
@@ -202,7 +209,32 @@ public class WavTest extends GridCommonAbstractTest {
 //        PersistorRegistry.getInstance().add(new PersistIgniteNetwork());
 //        EncogDirectoryPersistence.saveObject(new File(WAV_LOCAL + "net_" + sampleToRead + ".nn"), model.getM());
 //
-        calculateError(model, rate, sampleToRead, ((BasicNetwork)model.getM()).getLayerNeuronCount(0), framesInBatch);
+//        calculateError(model, rate, sampleToRead, ((BasicNetwork)model.getM()).getLayerNeuronCount(0), framesInBatch);
+
+        SequentialRunner runner = new SequentialRunner();
+
+        String outputWavPath = WAV_LOCAL + "sample" + sampleToRead + "_rate" + rate + "_pred.wav";
+        int size = inputWav.batchs().size();
+        int r = (int)(inputWav.file().getSampleRate() / inputWav.file().getNumChannels());
+
+        int stepSize = 1;
+        double csvDown = 1.0;
+
+        runner.add(new MSECalculator());
+        runner.add(new PredictedWavWriter(outputWavPath, size, r));
+//        runner.add(new WavTracer((int)(stepSize * csvDown), 1_000_000));
+        String outputGenWavPath = WAV_LOCAL + "sample" + sampleToRead + "_rate" + rate + "_gen.wav";
+
+        if (outputGenWavPath != null) {
+            System.out.println("Added generating in " + outputGenWavPath);
+            runner.add(new GeneratedWavWriter(model.getM(), outputGenWavPath, size, r));
+        }
+
+        int bestMdlHistDepth = ((BasicNetwork)model.getM()).getLayerNeuronCount(0);
+
+        System.out.println("Best model history depth: " + bestMdlHistDepth);
+        runner.run(model, bestMdlHistDepth, framesInBatch, dataSample);
+
 
 //        System.out.println(NeuralNetworkUtils.printBinaryNetwork((BasicNetwork)model.getM()));
     }

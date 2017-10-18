@@ -122,7 +122,7 @@ public class WavTestSingleFile extends GridCommonAbstractTest {
         List<IgniteEvolutionaryOperator> evoOps = Arrays.asList(
             new NodeCrossover(0.2, "nc"),
             new WeightMutation(0.2, lr, "wm"),
-            new MutateNodes(10, 0.2, lr, "mn")
+            new MutateNodes(0.1, 0.2, lr, "mn")
         );
 
         System.out.println("DS size " + datasetSize);

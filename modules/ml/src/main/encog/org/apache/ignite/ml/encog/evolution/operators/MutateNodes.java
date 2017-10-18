@@ -26,13 +26,16 @@ import org.encog.ml.genetic.MLMethodGenome;
 import org.encog.neural.networks.BasicNetwork;
 
 public class MutateNodes extends IgniteEvolutionaryOperator implements HasLearningRate {
-    private int nodesToMutateCnt;
+//    private final int nodesToMutateCnt;
+    //    private int nodesToMutateCnt;
     private double learningRate;
+    private double mutationRate;
 
-    public MutateNodes(int nodesToMutateCnt, double prob, double learningRate, String operatorId) {
+    public MutateNodes(double mutationRate, double prob, double learningRate, String operatorId) {
         super(prob, operatorId);
         this.learningRate = learningRate;
-        this.nodesToMutateCnt = nodesToMutateCnt;
+        this.mutationRate = mutationRate;
+//        this.nodesToMutateCnt = nodesToMutateCnt;
     }
 
     @Override public void init(EvolutionaryAlgorithm theOwner) {
@@ -51,6 +54,11 @@ public class MutateNodes extends IgniteEvolutionaryOperator implements HasLearni
         int offspringIdx) {
         BasicNetwork parent = (BasicNetwork)((MLMethodGenome)parents[parentIndex]).getPhenotype();
         BasicNetwork off = (BasicNetwork)parent.clone();
+        int nodesToMutateCnt = (int)(parent.calculateNeuronCount() * mutationRate);
+
+        if (nodesToMutateCnt < 1)
+            nodesToMutateCnt = 1;
+
         int[] nodeNumbers = Util.selectKDistinct(NeuralNetworkUtils.innerNeuronsCount(parent), nodesToMutateCnt);
 
         for (int nodeNumber : nodeNumbers) {

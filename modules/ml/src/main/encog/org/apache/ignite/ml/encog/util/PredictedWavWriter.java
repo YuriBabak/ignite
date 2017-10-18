@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.encog.util;
 
+import java.util.Arrays;
 import org.apache.ignite.ml.encog.wav.WavReader;
 
 public class PredictedWavWriter implements SequentialOperation {
@@ -25,6 +26,10 @@ public class PredictedWavWriter implements SequentialOperation {
     private int offset = 0;
     private double[] buff;
     private int outputRate;
+
+    public static double toWavRange(double x) {
+        return x * 2 - 1;
+    }
 
     public PredictedWavWriter(String outputPath, int size, int outputRate) {
         this.outputPath = outputPath;
@@ -44,6 +49,6 @@ public class PredictedWavWriter implements SequentialOperation {
     }
 
     @Override public void finish() {
-        WavReader.write(outputPath, buff, outputRate);
+        WavReader.write(outputPath, Arrays.stream(buff).map(PredictedWavWriter::toWavRange).toArray(), outputRate);
     }
 }

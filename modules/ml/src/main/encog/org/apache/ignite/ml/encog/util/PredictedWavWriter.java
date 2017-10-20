@@ -44,8 +44,8 @@ public class PredictedWavWriter implements SequentialOperation {
     }
 
     @Override public void handle(double[] groundTruth, double[] predicted) {
-        buff[offset] = predicted[0];
-        offset++;
+        System.arraycopy(predicted,0, buff,offset, predicted.length);
+        offset+=predicted.length;
     }
 
     @Override public void finish() {

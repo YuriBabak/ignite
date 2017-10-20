@@ -6,6 +6,25 @@
         <!-- Set to true to enable distributed class loading for examples, default is false. -->
         <!--<property name="peerClassLoadingEnabled" value="true"/>-->
 
+        <property name="memoryConfiguration">
+            <bean class="org.apache.ignite.configuration.MemoryConfiguration">
+                <property name="defaultMemoryPolicySize" value="#{75L * 1024 * 1024 * 1024}"/>
+
+                <property name="pageSize" value="16384"/>
+
+                <property name="memoryPolicies">
+                    <list>
+                        <bean
+                            class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
+                            <property name="initialSize" value="#{75L * 1024 * 1024 * 1024}"/>
+                            <property name="maxSize" value="#{75L * 1024 * 1024 * 1024}"/>
+                            <property name="metricsEnabled" value="true"/>
+                        </bean>
+                    </list>
+                </property>
+            </bean>
+        </property>
+
         <property name="communicationSpi">
             <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
                 <!-- Override local port. -->

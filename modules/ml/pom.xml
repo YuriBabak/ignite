@@ -36,6 +36,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <netlibjava.version>1.1.2</netlibjava.version>
+        <nd4j.version>0.7.1</nd4j.version>
     </properties>
 
     <dependencies>
@@ -125,42 +126,9 @@
 
             <dependencies>
                 <dependency>
-                    <groupId>org.deeplearning4j</groupId>
-                    <artifactId>deeplearning4j-core</artifactId>
-                    <version>0.9.1</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.deeplearning4j</groupId>
-                    <artifactId>deeplearning4j-nn</artifactId>
-                    <version>0.9.1</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.deeplearning4j</groupId>
-                    <artifactId>arbiter-deeplearning4j</artifactId>
-                    <version>0.9.1</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.deeplearning4j</groupId>
-                    <artifactId>deeplearning4j-zoo</artifactId>
-                    <version>0.9.1</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-native-platform</artifactId>
-                    <version>0.9.1</version>
-                </dependency>
-                <dependency>
                     <groupId>org.nd4j</groupId>
                     <artifactId>nd4j-api</artifactId>
-                    <version>0.9.1</version>
-                </dependency>
-
-                <!-- https://mvnrepository.com/artifact/org.nd4j/nd4j-native -->
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-native</artifactId>
-                    <version>0.9.1</version>
-                    <scope>test</scope>
+                    <version>${nd4j.version}</version>
                 </dependency>
 
 

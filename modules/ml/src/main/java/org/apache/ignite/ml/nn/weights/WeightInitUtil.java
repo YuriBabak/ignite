@@ -51,3 +51,4 @@ public class WeightInitUtil {
         return paramsView.reshape(flatteningOrder, shape);
     }
 }
+

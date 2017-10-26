@@ -36,8 +36,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class Resnet18Mnist_simplified {
-    private static final Logger log = LoggerFactory.getLogger(Resnet18Mnist_simplified.class);
+public class ResnetExample {
+    private static final Logger log = LoggerFactory.getLogger(ResnetExample.class);
 
     public static void main(String[] args) throws Exception {
         int inputWidth = 28;

@@ -35,7 +35,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <nd4j.version>0.7.1</nd4j.version>
+        <nd4j.version>0.4.0</nd4j.version>
     </properties>
 
     <dependencies>

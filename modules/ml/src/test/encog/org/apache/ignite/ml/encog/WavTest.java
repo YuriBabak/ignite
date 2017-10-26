@@ -42,6 +42,8 @@ import org.apache.ignite.ml.encog.wav.WavReader;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.encog.neural.networks.BasicNetwork;
 
+import static org.apache.ignite.ml.encog.NeuralNetworkUtils.buildTreeLikeNetComplex;
+
 /**
  * TODO: add description.
  */
@@ -71,6 +73,7 @@ public class WavTest extends AbstractWavTest {
         int framesInBatch = 2;
         int sampleToRead = 4;
         int rate = 44100;
+        int subPopsCount = 2;
 
         System.out.println("Reading wav...");
         String dataSample = WAV_LOCAL + "sample" + sampleToRead + "_rate" + rate + ".wav";
@@ -78,7 +81,7 @@ public class WavTest extends AbstractWavTest {
         List<double[]> rawData = inputWav.batchs();
         System.out.println("Done.");
 
-        int pow = 8;
+        int pow = 7;
         int lookForwardFor = 1;
         int histDepth = (int)Math.pow(2, pow);
 
@@ -87,6 +90,7 @@ public class WavTest extends AbstractWavTest {
 
         int n = 50;
         int k = 49;
+
 
         IgniteFunction<Integer, IgniteNetwork> fact = i -> {
 //            IgniteNetwork res = new IgniteNetwork();
@@ -99,7 +103,7 @@ public class WavTest extends AbstractWavTest {
 //
 //
 //            res.reset();
-            return buildTreeLikeNetComplex(pow - (i % 3), lookForwardFor);
+            return buildTreeLikeNetComplex(pow - (i % subPopsCount), lookForwardFor);
         };
 
         IgniteFunction<Integer, TreeNetwork> fact1 = i -> new TreeNetwork(pow + 1);
@@ -138,9 +142,9 @@ public class WavTest extends AbstractWavTest {
             sp -> 30 * (int)Math.pow(2, sp), // tree depth drops with grow of subpopulation number, so we can do twice more local ticks with each level drop.
             // TODO: for the moment each population gets the same dataset, can be tweaked
             (in, ignite) -> new AdaptableTrainingScore(in.mlDataSet(0, ignite)),
-            3,
+            subPopsCount,
             new AddLeaders(0.2)
-                .andThen(new LearningRateAdjuster(null, 3))
+                .andThen(new LearningRateAdjuster(null, subPopsCount))
                 .andThen(new BasicStatsCounter())
             /*.andThen(new LearningRateAdjuster())*/
             ,
@@ -175,7 +179,7 @@ public class WavTest extends AbstractWavTest {
         double csvDown = 1.0;
 
         runner.add(new MSECalculator());
-        runner.add(new PredictedWavWriter(outputWavPath, size, r));
+        runner.add(new PredictedWavWriter(outputWavPath, size, r, lookForwardFor));
 //        runner.add(new WavTracer((int)(stepSize * csvDown), 1_000_000));
         String outputGenWavPath = WAV_LOCAL + "sample" + sampleToRead + "_rate" + rate + "_gen.wav";
 

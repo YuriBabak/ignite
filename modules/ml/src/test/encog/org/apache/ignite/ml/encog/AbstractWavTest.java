@@ -142,34 +142,6 @@ public abstract class AbstractWavTest extends GridCommonAbstractTest {
         System.out.println(">>> Tracing data saved: " + writer);
     }
 
-    protected static IgniteNetwork buildTreeLikeNetComplex(int leavesCountLog, int lookForwardCnt) {
-        IgniteNetwork res = new IgniteNetwork();
-
-        int lastTreeLike = 0;
-        for (int i = leavesCountLog; i >=0 && Math.pow(2, i) >= (lookForwardCnt / 2); i--) {
-            res.addLayer(new BasicLayer(i == 0 ? null : new ActivationSigmoid(), false, (int)Math.pow(2, i)));
-            lastTreeLike = leavesCountLog - i;
-        }
-
-        res.addLayer(new BasicLayer(new ActivationSigmoid(), false, lookForwardCnt));
-
-        res.getStructure().finalizeStructure();
-
-        for (int i = 0; i < lastTreeLike; i++) {
-            for (int n = 0; n < res.getLayerNeuronCount(i); n += 2) {
-                res.dropOutputsFrom(i, n);
-                res.dropOutputsFrom(i, n + 1);
-
-                res.enableConnection(i, n, n / 2, true);
-                res.enableConnection(i, n + 1, n / 2, true);
-            }
-        }
-
-        res.reset();
-
-        return res;
-    }
-
     protected IgniteBiFunction<Model<MLData, double[]>, List<double[]>, Double> errorsPercentage(int sample, int rate,
         int historyDepth, BiConsumer<Double, Double> writer){
 

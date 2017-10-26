@@ -26,16 +26,20 @@ public class PredictedWavWriter implements SequentialOperation {
     private int offset = 0;
     private double[] buff;
     private int outputRate;
+    private int curStep;
+    private int stepSize;
 
     public static double toWavRange(double x) {
         return x * 2 - 1;
     }
 
-    public PredictedWavWriter(String outputPath, int size, int outputRate) {
+    public PredictedWavWriter(String outputPath, int size, int outputRate, int stepSize) {
         this.outputPath = outputPath;
         this.size = size;
         this.outputRate = outputRate;
         buff = new double[size];
+        curStep = 0;
+        this.stepSize = stepSize;
     }
 
     @Override public void init(double[] initial) {
@@ -44,8 +48,13 @@ public class PredictedWavWriter implements SequentialOperation {
     }
 
     @Override public void handle(double[] groundTruth, double[] predicted) {
-        System.arraycopy(predicted,0, buff,offset, predicted.length);
-        offset+=predicted.length;
+        if (curStep % 10_000 == 0)
+            System.out.println("Cur step: " + curStep);
+        if (curStep % stepSize == 0) {
+            System.arraycopy(predicted, 0, buff, offset, predicted.length);
+            offset += predicted.length;
+        }
+        curStep++;
     }
 
     @Override public void finish() {

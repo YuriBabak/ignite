@@ -20,12 +20,13 @@ import org.apache.ignite.ml.encog.wav.WavReader;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.encog.neural.networks.BasicNetwork;
 
+import static org.apache.ignite.ml.encog.NeuralNetworkUtils.buildTreeLikeNetComplex;
+
 public class WavTestNPredict extends AbstractWavTest {
     private static final int NODE_COUNT = 1;
-    private static final int PREDICTION_DEEP = 4;
+    private static final int PREDICTION_DEPTH = 4;
 
-    //private static String WAV_LOCAL = "/home/enny/Downloads/wav/";
-    private static String WAV_LOCAL = "C:\\Users\\Yury\\Downloads\\wav\\";
+    private static String WAV_LOCAL = "/home/enny/Downloads/wav/";
 
     /**
      * Default constructor.
@@ -55,8 +56,8 @@ public class WavTestNPredict extends AbstractWavTest {
         List<double[]> rawData = inputWav.batchs();
         System.out.println("Done.");
 
-        int pow = 10;
-        int lookForwardFor = PREDICTION_DEEP;
+        int pow = 7;
+        int lookForwardFor = PREDICTION_DEPTH;
         int histDepth = (int)Math.pow(2, pow);
 
         int maxSamples = 1_000_000;
@@ -119,7 +120,7 @@ public class WavTestNPredict extends AbstractWavTest {
         double csvDown = 1.0;
 
         runner.add(new MSECalculator());
-        runner.add(new PredictedWavWriter(outputWavPath, size, r));
+        runner.add(new PredictedWavWriter(outputWavPath, size, r, lookForwardFor));
 //        runner.add(new WavTracer((int)(stepSize * csvDown), 1_000_000));
         String outputGenWavPath = WAV_LOCAL + "sample" + sampleToRead + "_rate" + rate + "_gen.wav";
 

@@ -29,14 +29,16 @@
                     <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">-->
                         <property name="addresses">
                             <list>
+                                <value>172.25.4.171:48500..48509</value>
+                                <!--<value>172.25.4.180:48500..48509</value>-->
                                 <!--<value>172.25.1.19:48500..48509</value>-->
                                 <!--<value>172.25.1.28:48500..48509</value>-->
                                 <!--<value>172.25.1.30:48500..48509</value>-->
                                 <!--<value>172.25.1.20:48500..48509</value>-->
-                                <value>172.25.1.43:48500..48509</value>
-                                <value>172.25.1.44:48500..48509</value>
-                                <value>172.25.1.45:48500..48509</value>
-                                <value>172.25.1.46:48500..48509</value>
+                                <!--<value>10.50.58.85:48500..48509</value>-->
+                                <!--<value>10.50.58.86:48500..48509</value>-->
+                                <!--<value>10.50.58.87:48500..48509</value>-->
+                                <!--<value>10.50.58.88:48500..48509</value>-->
                             </list>
                         </property>
                     </bean>

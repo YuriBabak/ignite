@@ -37,11 +37,13 @@ import org.jetbrains.annotations.NotNull;
 public class WavGAExample {
     private static final String OUTPUT_PRED_WAV_DEFAULT = "~/output.wav";
     private static final double CSV_DOWNSAMPLE_RATIO = 0.5;
+    private static final int FORWARD_DEPTH = 1;
+    private static final String DEFAULT_MODEL_PATH = "/home/admin/";
     private static double DEFAULT_BATCH_PERCENTAGE = 0.2;
     private static int HISTORY_DEPTH_LOG_DEFAULT = 5;
     private static int MAX_TICKS_DEFAULT = 40;
     private static int FRAMES_IN_BATCH_DEFAULT = 2;
-    private static int MAX_SAMPLES_DEFAULT = 1_000_000;
+    private static int MAX_SAMPLES_DEFAULT = 200_000;
     private static int SUBPOPS_DEFAULT = 3;
     private static int STEP_SIZE_DEFAULT = 1;
 
@@ -59,13 +61,17 @@ public class WavGAExample {
         int maxTicks;
         int histDepth;
         int subpops;
+        int forwardDepth;
         String outputWavPath;
         String outputGenWavPath;
         int stepSize;
         double batchPercentage;
         double csvDown;
+        String modelsPath;
 
         try {
+//            -tr_sample /home/artemmalykh/wavs/sample4_rate44100.wav -out /home/artemmalykh/out.wav -data_samples /home/artemmalykh/wavs/sample4_rate44100.wav -cfg /home/artemmalykh/example-ml-nn-client.xml -max_ticks 25 -depth_log 8 -out_gen /home/artemmalykh/out-gen.wav -subpops 3 -ds_part 0.05 -step_size 2 -fwd 2
+
             // parse the command line arguments
             CommandLine line = parser.parse( buildOptions(), args );
 
@@ -80,6 +86,8 @@ public class WavGAExample {
             batchPercentage = getDoubleOrDefault("ds_part", DEFAULT_BATCH_PERCENTAGE, line);
             stepSize = getIntOrDefault("step_size", STEP_SIZE_DEFAULT, line);
             csvDown = getDoubleOrDefault("cdr", CSV_DOWNSAMPLE_RATIO, line);
+            forwardDepth = getIntOrDefault("fwd", FORWARD_DEPTH, line);
+            modelsPath = line.getOptionValue("mdl", DEFAULT_MODEL_PATH);
 
             trainingSample = line.getOptionValue("tr_sample");
             dataSample = line.getOptionValue("data_samples");
@@ -103,9 +111,9 @@ public class WavGAExample {
             System.out.println("Done.");
 
             long before = System.currentTimeMillis();
-            SamplesCache.loadIntoCache(rawData, histDepth, maxSamples, stepSize, SamplesCache.CACHE_NAME, ignite);
+            SamplesCache.loadIntoCache(rawData, histDepth, maxSamples, stepSize, forwardDepth, ignite);
 
-            IgniteFunction<Integer, IgniteNetwork> fact = getNNFactory(histDepthLog);
+            IgniteFunction<Integer, IgniteNetwork> fact = getNNFactory(histDepthLog, forwardDepth);
 
             double lr = 0.5;
 
@@ -159,7 +167,7 @@ public class WavGAExample {
             int rate = (int)(inputWav.file().getSampleRate() / inputWav.file().getNumChannels());
 
             runner.add(new MSECalculator());
-            runner.add(new PredictedWavWriter(outputWavPath, size, rate));
+            runner.add(new PredictedWavWriter(outputWavPath, size, rate, forwardDepth));
             runner.add(new WavTracer((int)(stepSize * csvDown), 1_000_000));
 
             if (outputGenWavPath != null) {
@@ -173,7 +181,7 @@ public class WavGAExample {
             runner.run(mdl, bestMdlHistDepth, framesInBatch, dataSample);
 
             PersistorRegistry.getInstance().add(new PersistIgniteNetwork());
-            EncogDirectoryPersistence.saveObject(new File("/home/artemmalykh/model" + System.currentTimeMillis() + ".nn"), mdl.getM());
+            EncogDirectoryPersistence.saveObject(new File(modelsPath + "model" + System.currentTimeMillis() + ".nn"), mdl.getM());
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -237,6 +245,13 @@ public class WavGAExample {
         Option csvDownsampleRatio = OptionBuilder.withArgName("cdr").withLongOpt("csv_downsample_ratio").hasArg().isRequired(false)
             .withDescription("CSV downsampling ratio " + CSV_DOWNSAMPLE_RATIO).create();
 
+        Option forwardDepthOpt = OptionBuilder.withArgName("fwd").withLongOpt("fwd").hasArg().isRequired(false)
+            .withDescription("Forward depth " + FORWARD_DEPTH).create();
+
+        Option modelsDirPathOpt = OptionBuilder.withArgName("mdl").withLongOpt("mdl").hasArg().isRequired(false)
+            .withDescription("Directory for storing models, default is " + DEFAULT_MODEL_PATH).create();
+
+
         options.addOption(histDepthOpt);
         options.addOption(framesInBatchOpt);
         options.addOption(trainingSamplesOpt);
@@ -250,33 +265,37 @@ public class WavGAExample {
         options.addOption(batchPercentageOpt);
         options.addOption(stepSizeOpt);
         options.addOption(csvDownsampleRatio);
+        options.addOption(forwardDepthOpt);
+        options.addOption(modelsDirPathOpt);
+
 
         return options;
     }
 
     /** */
-    @NotNull private static IgniteFunction<Integer, IgniteNetwork> getNNFactory(int maxLeavesCountLog) {
+    @NotNull private static IgniteFunction<Integer, IgniteNetwork> getNNFactory(int maxLeavesCountLog, int forwardDepth) {
         return subPopulation -> {
-            int treeDepth = maxLeavesCountLog - (subPopulation % 3);
-            IgniteNetwork res = new IgniteNetwork();
-            for (int i = treeDepth; i >= 0; i--)
-                res.addLayer(new BasicLayer(i == 0 ? null : new ActivationSigmoid(), false, (int)Math.pow(2, i)));
-
-            res.getStructure().finalizeStructure();
-
-            for (int i = 0; i < treeDepth - 1; i++) {
-                for (int n = 0; n < res.getLayerNeuronCount(i); n += 2) {
-                    res.dropOutputsFrom(i, n);
-                    res.dropOutputsFrom(i, n + 1);
-
-                    res.enableConnection(i, n, n / 2, true);
-                    res.enableConnection(i, n + 1, n / 2, true);
-                }
-            }
-
-            res.reset();
-
-            return res;
+            return NeuralNetworkUtils.buildTreeLikeNetComplex(maxLeavesCountLog - (subPopulation % 3), forwardDepth);
+//            int treeDepth = maxLeavesCountLog - (subPopulation % 3);
+//            IgniteNetwork res = new IgniteNetwork();
+//            for (int i = treeDepth; i >= 0; i--)
+//                res.addLayer(new BasicLayer(i == 0 ? null : new ActivationSigmoid(), false, (int)Math.pow(2, i)));
+//
+//            res.getStructure().finalizeStructure();
+//
+//            for (int i = 0; i < treeDepth - 1; i++) {
+//                for (int n = 0; n < res.getLayerNeuronCount(i); n += 2) {
+//                    res.dropOutputsFrom(i, n);
+//                    res.dropOutputsFrom(i, n + 1);
+//
+//                    res.enableConnection(i, n, n / 2, true);
+//                    res.enableConnection(i, n + 1, n / 2, true);
+//                }
+//            }
+//
+//            res.reset();
+//
+//            return res;
         };
     }
 }

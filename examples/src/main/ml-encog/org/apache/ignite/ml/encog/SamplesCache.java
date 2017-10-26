@@ -54,6 +54,39 @@ public class SamplesCache {
         System.out.println("Cache size after streaming (" + cacheName + "): " + cache.size());
     }
 
+    protected static void loadIntoCache(List<double[]> wav, int histDepth, int maxSamples, int stepSize,
+        int lookForwardAt, Ignite ignite) {
+        IgniteCache<Integer, MLDataPair> cache = getOrCreate(ignite);
+        System.out.println("initial cache size is " + cache.size());
+
+        try (IgniteDataStreamer<Integer, MLDataPair> stmr = ignite.dataStreamer(cache.getName())) {
+            // Stream entries.
+
+            int samplesCnt = wav.size();
+            System.out.println("Loading " + samplesCnt + " samples into cache...");
+            for (int i = histDepth; i < samplesCnt - 1 && (i - histDepth) / stepSize < maxSamples; i++) {
+                if ((i - histDepth) % stepSize != 0)
+                    continue;
+
+                // The mean is calculated inefficient
+                BasicMLData dataSetEntry = new BasicMLData(wav.subList(i - histDepth, i).stream().map(doubles ->
+                    (Arrays.stream(doubles).sum() / doubles.length + 1) / 2).mapToDouble(d -> d).toArray());
+
+                double[] lable = wav.subList(i + 1, i + 1 + lookForwardAt).stream().map(doubles ->
+                    (Arrays.stream(doubles).sum() / doubles.length + 1) / 2).mapToDouble(d -> d).toArray();
+
+                int sampleNum = (i - histDepth) / stepSize;
+                stmr.addData(sampleNum, new BasicMLDataPair(dataSetEntry, new BasicMLData(lable)));
+
+                if (i % 10_000 == 0)
+                    System.out.println("Lb:" + Arrays.toString(lable));
+
+                if (i % 5000 == 0)
+                    System.out.println("Loaded " + sampleNum);
+            }
+        }
+    }
+
     public static IgniteCache<Integer, MLDataPair> getOrCreate(Ignite ignite) {
         CacheConfiguration<Integer, MLDataPair> cfg = new CacheConfiguration<>();
 

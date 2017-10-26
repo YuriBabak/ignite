@@ -17,7 +17,9 @@
 
 package org.apache.ignite.ml.encog;
 
+import org.encog.engine.network.activation.ActivationSigmoid;
 import org.encog.neural.networks.BasicNetwork;
+import org.encog.neural.networks.layers.BasicLayer;
 
 /**
  * Some NN-related utils.
@@ -90,5 +92,33 @@ public class NeuralNetworkUtils {
 
     public static int innerNeuronsCount(TreeNetwork n) {
         return ((int)Math.pow(2, n.depth) - 1) - n.getLayerNeuronCount(0) - n.getLayerNeuronCount(n.getLayerCount() - 1);
+    }
+
+    protected static IgniteNetwork buildTreeLikeNetComplex(int leavesCountLog, int lookForwardCnt) {
+        IgniteNetwork res = new IgniteNetwork();
+
+        int lastTreeLike = 0;
+        for (int i = leavesCountLog; i >=0 && Math.pow(2, i) >= (lookForwardCnt / 2); i--) {
+            res.addLayer(new BasicLayer(i == 0 ? null : new ActivationSigmoid(), false, (int)Math.pow(2, i)));
+            lastTreeLike = leavesCountLog - i;
+        }
+
+        res.addLayer(new BasicLayer(new ActivationSigmoid(), false, lookForwardCnt));
+
+        res.getStructure().finalizeStructure();
+
+        for (int i = 0; i < lastTreeLike; i++) {
+            for (int n = 0; n < res.getLayerNeuronCount(i); n += 2) {
+                res.dropOutputsFrom(i, n);
+                res.dropOutputsFrom(i, n + 1);
+
+                res.enableConnection(i, n, n / 2, true);
+                res.enableConnection(i, n + 1, n / 2, true);
+            }
+        }
+
+        res.reset();
+
+        return res;
     }
 }

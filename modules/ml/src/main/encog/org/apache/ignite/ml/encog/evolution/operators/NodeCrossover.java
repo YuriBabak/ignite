@@ -53,6 +53,9 @@ public class NodeCrossover extends IgniteEvolutionaryOperator {
         int depthDelta = highest.getLayerCount() - lowest.getLayerCount();
 
         for (int l = 1 + depthDelta; l < cnt - 1; l++) {
+            if (l < 0) {
+                System.out.println("highest :" + highest.getLayerCount() + "lowest: " + lowest.getLayerCount() + " depthDelta: " + depthDelta);
+            }
             for (int n = 0; n < lowest.getLayerNeuronCount(l); n++) {
                 // true - first parent, false - second parent
                 boolean isFirst = rnd.nextBoolean();

@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.jetbrains.annotations.Nullable;
@@ -48,11 +49,15 @@ public class GroupTrainerTask<S, U extends Serializable> extends ComputeTaskAdap
         Map<ComputeJob, ClusterNode> res = new HashMap<>();
 
         // TODO: do not send whole input data, but divide it.
-        for (ClusterNode node : subgrid) {
+        for (ClusterNode node : subgrid)
             res.put(new LocalTrainingTickJob<>(trainingUuid, inputData), node);
-        }
 
         return res;
+    }
+
+    @Override
+    public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
+        return super.result(res, rcvd);
     }
 
     @Nullable @Override

@@ -38,7 +38,7 @@ public class WavGAExample {
     private static final String OUTPUT_PRED_WAV_DEFAULT = "~/output.wav";
     private static final double CSV_DOWNSAMPLE_RATIO = 0.5;
     private static final int FORWARD_DEPTH = 1;
-    private static final String DEFAULT_MODEL_PATH = "/home/admin/";
+    private static final String DEFAULT_MODEL_PATH = "/home/artemmalykh/";
     private static double DEFAULT_BATCH_PERCENTAGE = 0.2;
     private static int HISTORY_DEPTH_LOG_DEFAULT = 5;
     private static int MAX_TICKS_DEFAULT = 40;
@@ -113,7 +113,7 @@ public class WavGAExample {
             long before = System.currentTimeMillis();
             SamplesCache.loadIntoCache(rawData, histDepth, maxSamples, stepSize, forwardDepth, ignite);
 
-            IgniteFunction<Integer, IgniteNetwork> fact = getNNFactory(histDepthLog, forwardDepth);
+            IgniteFunction<Integer, IgniteNetwork> fact = getNNFactory(histDepthLog, forwardDepth, subpops);
 
             double lr = 0.5;
 
@@ -135,7 +135,7 @@ public class WavGAExample {
                 datasetSize,
                 60,
                 evoOps,
-                sp -> baseIter * (int)Math.pow(2, sp % 3), // tree depth drops with grow of subpopulation number, so we can do twice more local ticks with each level drop.
+                sp -> baseIter * (int)Math.pow(2, sp % subpops), // tree depth drops with grow of subpopulation number, so we can do twice more local ticks with each level drop.
                 (in, ign) -> new AdaptableTrainingScore(in.mlDataSet(0, ign)),
                 subpops,
                 new AddLeaders(0.2)
@@ -168,7 +168,7 @@ public class WavGAExample {
 
             runner.add(new MSECalculator());
             runner.add(new PredictedWavWriter(outputWavPath, size, rate, forwardDepth));
-            runner.add(new WavTracer((int)(stepSize * csvDown), 1_000_000));
+            runner.add(new WavTracer((int)(stepSize * csvDown), maxSamples));
 
             if (outputGenWavPath != null) {
                 System.out.println("Added generating in " + outputGenWavPath);
@@ -273,9 +273,9 @@ public class WavGAExample {
     }
 
     /** */
-    @NotNull private static IgniteFunction<Integer, IgniteNetwork> getNNFactory(int maxLeavesCountLog, int forwardDepth) {
+    @NotNull private static IgniteFunction<Integer, IgniteNetwork> getNNFactory(int maxLeavesCountLog, int forwardDepth, int subpopsCount) {
         return subPopulation -> {
-            return NeuralNetworkUtils.buildTreeLikeNetComplex(maxLeavesCountLog - (subPopulation % 3), forwardDepth);
+            return NeuralNetworkUtils.buildTreeLikeNetComplex(maxLeavesCountLog - (subPopulation % subpopsCount), forwardDepth);
 //            int treeDepth = maxLeavesCountLog - (subPopulation % 3);
 //            IgniteNetwork res = new IgniteNetwork();
 //            for (int i = treeDepth; i >= 0; i--)

@@ -66,7 +66,7 @@ public class OneVsRestClassificationExample {
                 .fillCacheWith(MLSandboxDatasets.GLASS_IDENTIFICATION);
 
             OneVsRestTrainer<SVMLinearClassificationModel> trainer
-                = new OneVsRestTrainer<>(new SVMLinearClassificationTrainer()
+                = new OneVsRestTrainer(new SVMLinearClassificationTrainer()
                 .withAmountOfIterations(20)
                 .withAmountOfLocIterations(50)
                 .withLambda(0.2)

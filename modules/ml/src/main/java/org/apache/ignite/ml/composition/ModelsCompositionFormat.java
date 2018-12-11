@@ -19,9 +19,9 @@ package org.apache.ignite.ml.composition;
 
 import java.io.Serializable;
 import java.util.List;
-import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.model.Model;
 
 /**
  * ModelsComposition representation.

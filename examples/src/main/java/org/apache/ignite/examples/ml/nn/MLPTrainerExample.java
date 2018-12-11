@@ -23,17 +23,17 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.ml.algorithms.nn.Activators;
+import org.apache.ignite.ml.algorithms.nn.MLPTrainer;
+import org.apache.ignite.ml.algorithms.nn.MultilayerPerceptron;
+import org.apache.ignite.ml.algorithms.nn.UpdatesStrategy;
+import org.apache.ignite.ml.algorithms.nn.architecture.MLPArchitecture;
+import org.apache.ignite.ml.math.optimization.LossFunctions;
+import org.apache.ignite.ml.math.optimization.updatecalculators.SimpleGDParameterUpdate;
+import org.apache.ignite.ml.math.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.nn.Activators;
-import org.apache.ignite.ml.nn.MLPTrainer;
-import org.apache.ignite.ml.nn.MultilayerPerceptron;
-import org.apache.ignite.ml.nn.UpdatesStrategy;
-import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
-import org.apache.ignite.ml.optimization.LossFunctions;
-import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
-import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 
 /**
  * Example of using distributed {@link MultilayerPerceptron}.

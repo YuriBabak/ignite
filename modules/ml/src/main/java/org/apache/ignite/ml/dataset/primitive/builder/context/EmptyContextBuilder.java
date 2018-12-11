@@ -20,8 +20,8 @@ package org.apache.ignite.ml.dataset.primitive.builder.context;
 import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.environment.LearningEnvironment;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.environment.LearningEnvironment;
 
 /**
  * A partition {@code context} builder that makes {@link EmptyContext}.

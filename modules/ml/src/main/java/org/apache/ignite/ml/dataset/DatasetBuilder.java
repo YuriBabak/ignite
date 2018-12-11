@@ -19,9 +19,9 @@ package org.apache.ignite.ml.dataset;
 
 import java.io.Serializable;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.ml.dataset.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.trainers.transformers.BaggingUpstreamTransformer;
 
 /**

@@ -22,8 +22,8 @@ import java.util.Arrays;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
-import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 
 /**
  * Distributed implementation of LSQR algorithm based on {@link AbstractLSQR} and {@link Dataset}.

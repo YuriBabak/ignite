@@ -17,9 +17,9 @@
 
 package org.apache.ignite.ml.pipeline;
 
-import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.model.Model;
 
 /**
  * Wraps the model produced by {@link Pipeline}.

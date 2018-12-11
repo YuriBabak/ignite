@@ -20,7 +20,6 @@ package org.apache.ignite.ml.composition.boosting;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckerFactory;
@@ -28,13 +27,14 @@ import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueCo
 import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.environment.logging.MLLogger;
+import org.apache.ignite.ml.dataset.environment.LearningEnvironment;
+import org.apache.ignite.ml.dataset.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.dataset.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.model.Model;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 

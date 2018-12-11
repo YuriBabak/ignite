@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.dataset;
 
 import java.io.Serializable;
-import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.dataset.environment.LearningEnvironment;
 
 /**
  * Builder of {@link UpstreamTransformerBuilder}.

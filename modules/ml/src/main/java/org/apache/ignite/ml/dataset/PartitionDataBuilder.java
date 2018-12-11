@@ -20,9 +20,9 @@ package org.apache.ignite.ml.dataset;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.stream.Stream;
+import org.apache.ignite.ml.dataset.environment.LearningEnvironment;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
-import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**

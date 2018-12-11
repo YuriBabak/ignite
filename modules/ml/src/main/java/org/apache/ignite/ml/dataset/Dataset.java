@@ -18,9 +18,9 @@
 package org.apache.ignite.ml.dataset;
 
 import java.io.Serializable;
+import org.apache.ignite.ml.dataset.environment.LearningEnvironment;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDataset;
 import org.apache.ignite.ml.dataset.impl.local.LocalDataset;
-import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteBiConsumer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;

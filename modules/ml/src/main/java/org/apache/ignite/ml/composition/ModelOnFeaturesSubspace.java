@@ -20,9 +20,9 @@ package org.apache.ignite.ml.composition;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.model.Model;
 import org.apache.ignite.ml.util.ModelTrace;
 
 /**

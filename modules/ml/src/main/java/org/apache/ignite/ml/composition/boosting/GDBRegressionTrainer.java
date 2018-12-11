@@ -19,7 +19,7 @@ package org.apache.ignite.ml.composition.boosting;
 
 import org.apache.ignite.ml.composition.boosting.loss.SquaredError;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.dataset.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.common;
 
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.model.Model;
 import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;

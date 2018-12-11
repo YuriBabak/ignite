@@ -19,11 +19,11 @@ package org.apache.ignite.ml.composition;
 
 import java.util.Collections;
 import java.util.List;
-import org.apache.ignite.ml.Exportable;
-import org.apache.ignite.ml.Exporter;
-import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.model.Exportable;
+import org.apache.ignite.ml.model.Exporter;
+import org.apache.ignite.ml.model.Model;
 import org.apache.ignite.ml.util.ModelTrace;
 
 /**

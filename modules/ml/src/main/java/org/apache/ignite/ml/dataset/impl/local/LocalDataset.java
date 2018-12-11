@@ -20,7 +20,7 @@ package org.apache.ignite.ml.dataset.impl.local;
 import java.io.Serializable;
 import java.util.List;
 import org.apache.ignite.ml.dataset.Dataset;
-import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.dataset.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;

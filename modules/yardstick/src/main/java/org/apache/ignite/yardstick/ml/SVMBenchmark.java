@@ -28,18 +28,18 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
+import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
+import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
 /**
- * Ignite benchmark for {@link SVMLinearBinaryClassificationTrainer}
+ * Ignite benchmark for {@link SVMLinearClassificationTrainer}
  */
 public class SVMBenchmark extends IgniteCacheAbstractBenchmark<Integer, Vector> {
     /** Dimension. */
@@ -50,11 +50,11 @@ public class SVMBenchmark extends IgniteCacheAbstractBenchmark<Integer, Vector> 
     private static long SEED = 123456L;
 
     /** Model. */
-    SVMLinearBinaryClassificationModel model;
+    SVMLinearClassificationModel model;
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> map) throws Exception {
-        SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer();
+        SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer();
 
         Ignite ignite = ignite();
         IgniteCache<Integer, Vector> cache = cache();
@@ -122,7 +122,7 @@ public class SVMBenchmark extends IgniteCacheAbstractBenchmark<Integer, Vector> 
     }
 
     /** Evaluate trained model. */
-    private void modelEvaluation(Model<Vector, Double> mdl){
+    private void modelEvaluation(IgniteModel<Vector, Double> mdl){
         int amountOfErrors = 0;
         int totalAmount = 0;
 
@@ -134,7 +134,7 @@ public class SVMBenchmark extends IgniteCacheAbstractBenchmark<Integer, Vector> 
                 Vector inputs = val.copyOfRange(1, val.size());
                 double groundTruth = val.get(0);
 
-                double prediction = mdl.apply(inputs);
+                double prediction = mdl.predict(inputs);
 
                 totalAmount++;
                 if(groundTruth != prediction)

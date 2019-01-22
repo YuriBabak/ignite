@@ -108,7 +108,7 @@ public class SVMBenchmark extends IgniteCacheAbstractBenchmark<Integer, Vector> 
             cache.put(i, nextPoint(random));
     }
 
-    /* Generate a next random point. */
+    /** Generate a next random point. */
     private Vector nextPoint(Random r){
         double lb = r.nextBoolean() ? 1d : 0d;
         double[] pnt = new double[DIMENSION + 1];

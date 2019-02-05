@@ -17,21 +17,18 @@
 
 package org.apache.ignite.yardstick.ml;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
 import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
@@ -51,21 +48,26 @@ public class SVMBenchmark extends IgniteCacheAbstractBenchmark<Integer, Vector> 
 
     /** Model. */
     SVMLinearClassificationModel model;
+    /** Feature extractor. */
+    IgniteBiFunction featureExtractor;
+    /** Label extractor. */
+    IgniteBiFunction lbExtractor;
+    /** Cache. */
+    IgniteCache<Integer, Vector> cache;
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> map) throws Exception {
         SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer();
 
         Ignite ignite = ignite();
-        IgniteCache<Integer, Vector> cache = cache();
+        cache = cache();
 
         assert ignite != null;
         assert cache != null;
 
-        IgniteBiFunction featureExtractor =
-            (IgniteBiFunction<Integer, Vector, Vector>)(integer, vector) -> vector.copyOfRange(1, vector.size());
-        IgniteBiFunction lbExtractor =
-            (IgniteBiFunction<Integer, Vector, Double>)(integer, vector) -> vector.get(0);
+        
+        featureExtractor = (IgniteBiFunction<Integer, Vector, Vector>)(integer, vector) -> vector.copyOfRange(1, vector.size());
+        lbExtractor = (IgniteBiFunction<Integer, Vector, Double>)(integer, vector) -> vector.get(0);
 
         model = trainer.fit(
             ignite,
@@ -79,7 +81,7 @@ public class SVMBenchmark extends IgniteCacheAbstractBenchmark<Integer, Vector> 
 
     /** {@inheritDoc} */
     @Override public void tearDown() throws Exception {
-        modelEvaluation(model);
+        modelEvaluation(cache,model,featureExtractor,lbExtractor);
 
         super.tearDown();
     }
@@ -122,35 +124,15 @@ public class SVMBenchmark extends IgniteCacheAbstractBenchmark<Integer, Vector> 
     }
 
     /** Evaluate trained model. */
-    private void modelEvaluation(IgniteModel<Vector, Double> mdl){
-        int amountOfErrors = 0;
-        int totalAmount = 0;
+    private void modelEvaluation(IgniteCache dataCache, IgniteModel<Vector, Double> mdl,
+        IgniteBiFunction featureExtractor, IgniteBiFunction lbExtractor){
+        double accuracy = BinaryClassificationEvaluator.evaluate(
+            dataCache,
+            mdl,
+            featureExtractor,
+            lbExtractor
+        ).accuracy();
 
-        int[][] confusionMtx = {{0, 0}, {0, 0}};
-
-        try (QueryCursor<Cache.Entry<Integer, Vector>> observations = cache.query(new ScanQuery<>())) {
-            for (Cache.Entry<Integer, Vector> observation : observations) {
-                Vector val = observation.getValue();
-                Vector inputs = val.copyOfRange(1, val.size());
-                double groundTruth = val.get(0);
-
-                double prediction = mdl.predict(inputs);
-
-                totalAmount++;
-                if(groundTruth != prediction)
-                    amountOfErrors++;
-
-                int idx1 = prediction == 0.0 ? 0 : 1;
-                int idx2 = groundTruth == 0.0 ? 0 : 1;
-
-                confusionMtx[idx1][idx2]++;
-
-                BenchmarkUtils.println(String.format(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth));
-            }
-            BenchmarkUtils.println("\n>>> Absolute amount of errors " + amountOfErrors);
-            BenchmarkUtils.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
-        }
-
-        BenchmarkUtils.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
+        BenchmarkUtils.println("\n>>> Accuracy + " + accuracy);
     }
 }

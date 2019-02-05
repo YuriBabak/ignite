@@ -40,11 +40,13 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCacheWriter;
@@ -67,7 +69,6 @@ import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
@@ -83,6 +84,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryReq
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -92,6 +94,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Delete;
 import org.h2.command.dml.Insert;
@@ -288,21 +291,9 @@ public class DmlStatementsProcessor {
                     ress.add(res);
                 }
                 catch (Exception e ) {
-                    String sqlState;
+                    SQLException sqlEx = QueryUtils.toSqlException(e);
 
-                    int code;
-
-                    if (e instanceof IgniteSQLException) {
-                        sqlState = ((IgniteSQLException)e).sqlState();
-
-                        code = ((IgniteSQLException)e).statusCode();
-                    } else {
-                        sqlState = SqlStateCode.INTERNAL_ERROR;
-
-                        code = IgniteQueryErrorCode.UNKNOWN;
-                    }
-
-                    batchException = chainException(batchException, new SQLException(e.getMessage(), sqlState, code, e));
+                    batchException = chainException(batchException, sqlEx);
 
                     cntPerRow[cntr++] = Statement.EXECUTE_FAILED;
                 }
@@ -427,8 +418,9 @@ public class DmlStatementsProcessor {
     @SuppressWarnings({"unchecked"})
     long streamUpdateQuery(String qry, String schemaName, IgniteDataStreamer streamer, PreparedStatement stmt,
         final Object[] args) throws IgniteCheckedException {
-        GridRunningQueryInfo runningQryInfo = idx.runningQueryManager().register(qry,
-            GridCacheQueryType.SQL_FIELDS, schemaName, true, null);
+        Long qryId = idx.runningQueryManager().register(qry, GridCacheQueryType.SQL_FIELDS, schemaName, true, null);
+
+        boolean fail = false;
 
         try {
             idx.checkStatementStreamable(stmt);
@@ -498,8 +490,13 @@ public class DmlStatementsProcessor {
 
             return rows.size();
         }
+        catch (IgniteCheckedException e) {
+            fail = true;
+
+            throw e;
+        }
         finally {
-            idx.runningQueryManager().unregister(runningQryInfo);
+            idx.runningQueryManager().unregister(qryId, fail);
         }
     }
 
@@ -620,12 +617,20 @@ public class DmlStatementsProcessor {
 
                 return res;
             }
+            catch (ClusterTopologyServerNotFoundException e) {
+                throw new CacheServerNotFoundException(e.getMessage(), e);
+            }
             catch (IgniteCheckedException e) {
                 checkSqlException(e);
 
-                U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", e);
+                Exception ex = IgniteUtils.convertExceptionNoWrap(e);
 
-                throw new IgniteSQLException("Failed to run update. " + e.getMessage(), e);
+                if (ex instanceof IgniteException)
+                    throw (IgniteException)ex;
+
+                U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", ex);
+
+                throw new IgniteSQLException("Failed to run update. " + ex.getMessage(), ex);
             }
             finally {
                 if (commit)
@@ -958,8 +963,7 @@ public class DmlStatementsProcessor {
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
             else
-                throw new IgniteSQLException("Duplicate key during INSERT [key=" + t.getKey() + ']',
-                    DUPLICATE_KEY);
+                throw new TransactionDuplicateKeyException("Duplicate key during INSERT [key=" + t.getKey() + ']');
         }
         else {
             // Keys that failed to INSERT due to duplication.
@@ -1216,24 +1220,23 @@ public class DmlStatementsProcessor {
      * @throws IgniteSQLException If failed.
      */
     public FieldsQueryCursor<List<?>> runNativeDmlStatement(String schemaName, String sql, SqlCommand cmd) {
-        GridRunningQueryInfo runningQryInfo = idx.runningQueryManager().register(sql,
-            GridCacheQueryType.SQL_FIELDS, schemaName, true, null);
+        Long qryId = idx.runningQueryManager().register(sql, GridCacheQueryType.SQL_FIELDS, schemaName, true, null);
 
         try {
             if (cmd instanceof SqlBulkLoadCommand)
-                return processBulkLoadCommand((SqlBulkLoadCommand)cmd, runningQryInfo.id());
+                return processBulkLoadCommand((SqlBulkLoadCommand)cmd, qryId);
             else
                 throw new IgniteSQLException("Unsupported DML operation: " + sql,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         }
         catch (IgniteSQLException e) {
-            idx.runningQueryManager().unregister(runningQryInfo);
+            idx.runningQueryManager().unregister(qryId, true);
 
             throw e;
         }
         catch (Exception e) {
-            idx.runningQueryManager().unregister(runningQryInfo);
+            idx.runningQueryManager().unregister(qryId, true);
 
             throw new IgniteSQLException("Unexpected DML operation failure: " + e.getMessage(), e);
         }

@@ -18,8 +18,8 @@
 package org.apache.ignite.yardstick.ml;
 
 import java.util.Map;
-import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -27,10 +27,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
+import org.apache.ignite.ml.util.generators.standard.TwoSeparableClassesDataStream;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
@@ -39,8 +40,6 @@ import org.yardstickframework.BenchmarkUtils;
  * Ignite benchmark for {@link SVMLinearClassificationTrainer}
  */
 public class SVMBenchmark extends IgniteCacheAbstractBenchmark<Integer, Vector> {
-    /** Dimension. */
-    private static int DIMENSION = 2;
     /** Dataset size. */
     private static int DATASET_SIZE = 30000;
     /** Seed. */
@@ -53,7 +52,7 @@ public class SVMBenchmark extends IgniteCacheAbstractBenchmark<Integer, Vector> 
     /** Label extractor. */
     IgniteBiFunction lbExtractor;
     /** Cache. */
-    IgniteCache<Integer, Vector> cache;
+    IgniteCache<Integer, LabeledVector<Double>> cache;
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> map) throws Exception {
@@ -66,8 +65,8 @@ public class SVMBenchmark extends IgniteCacheAbstractBenchmark<Integer, Vector> 
         assert cache != null;
 
         
-        featureExtractor = (IgniteBiFunction<Integer, Vector, Vector>)(integer, vector) -> vector.copyOfRange(1, vector.size());
-        lbExtractor = (IgniteBiFunction<Integer, Vector, Double>)(integer, vector) -> vector.get(0);
+        featureExtractor = (IgniteBiFunction<Integer, LabeledVector<Double>, Vector>)(integer, vector) -> vector.features();
+        lbExtractor = (IgniteBiFunction<Integer, LabeledVector<Double>, Double>)(integer, vector) -> (Double) vector.label();
 
         model = trainer.fit(
             ignite,
@@ -87,8 +86,8 @@ public class SVMBenchmark extends IgniteCacheAbstractBenchmark<Integer, Vector> 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteCache<Integer, Vector> cache() {
-        CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
+    @Override protected IgniteCache cache() {
+        CacheConfiguration<UUID, LabeledVector<Double>> cacheConfiguration = new CacheConfiguration<>();
         cacheConfiguration.setName("YARDSTICK_" + UUID.randomUUID());
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
 
@@ -103,24 +102,14 @@ public class SVMBenchmark extends IgniteCacheAbstractBenchmark<Integer, Vector> 
 
     /** Fill cache by random points. */
     private void fillCache() {
-        IgniteCache<Integer, Vector> cache = cache();
-        Random random = new Random(SEED);
+        IgniteCache<Integer, LabeledVector<Double>> cache = cache();
 
-        for (int i = 0; i < DATASET_SIZE; i++)
-            cache.put(i, nextPoint(random));
-    }
+        Stream<LabeledVector<Double>> dataStream = new TwoSeparableClassesDataStream(0, 20, SEED).labeled();
 
-    /** Generate a next random point. */
-    private Vector nextPoint(Random r){
-        double lb = r.nextBoolean() ? 1d : 0d;
-        double[] pnt = new double[DIMENSION + 1];
+        dataStream.limit(DATASET_SIZE).forEach(vector -> {
+            cache.put(vector.hashCode(), vector);
+        });
 
-        pnt[0] = lb;
-
-        for (int i = 1; i < DIMENSION + 1; i++)
-            pnt[i] = lb - r.nextDouble();
-
-        return VectorUtils.of(pnt);
     }
 
     /** Evaluate trained model. */
@@ -133,6 +122,6 @@ public class SVMBenchmark extends IgniteCacheAbstractBenchmark<Integer, Vector> 
             lbExtractor
         ).accuracy();
 
-        BenchmarkUtils.println("\n>>> Accuracy + " + accuracy);
+        BenchmarkUtils.println(">>> Accuracy: " + accuracy);
     }
 }

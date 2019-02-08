@@ -18,32 +18,20 @@
 package org.apache.ignite.yardstick.ml;
 
 import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
-import org.apache.ignite.ml.util.generators.standard.TwoSeparableClassesDataStream;
-import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
-import org.yardstickframework.BenchmarkConfiguration;
-import org.yardstickframework.BenchmarkUtils;
 
 /**
  * Ignite benchmark for {@link SVMLinearClassificationTrainer}
  */
-public class SVMBenchmark extends IgniteCacheAbstractBenchmark<Integer, Vector> {
+public class SVMBenchmark extends AbstractMLBenchmark {
     /** Dataset size. */
     private static int DATASET_SIZE = 30000;
-    /** Seed. */
-    private static long SEED = 123456L;
 
     /** Model. */
     SVMLinearClassificationModel model;
@@ -64,7 +52,6 @@ public class SVMBenchmark extends IgniteCacheAbstractBenchmark<Integer, Vector> 
         assert ignite != null;
         assert cache != null;
 
-        
         featureExtractor = (IgniteBiFunction<Integer, LabeledVector<Double>, Vector>)(integer, vector) -> vector.features();
         lbExtractor = (IgniteBiFunction<Integer, LabeledVector<Double>, Double>)(integer, vector) -> (Double) vector.label();
 
@@ -86,42 +73,7 @@ public class SVMBenchmark extends IgniteCacheAbstractBenchmark<Integer, Vector> 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteCache cache() {
-        CacheConfiguration<UUID, LabeledVector<Double>> cacheConfiguration = new CacheConfiguration<>();
-        cacheConfiguration.setName("YARDSTICK_" + UUID.randomUUID());
-        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
-
-        return ignite().getOrCreateCache(cacheConfiguration);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-        fillCache();
-    }
-
-    /** Fill cache by random points. */
-    private void fillCache() {
-        IgniteCache<Integer, LabeledVector<Double>> cache = cache();
-
-        Stream<LabeledVector<Double>> dataStream = new TwoSeparableClassesDataStream(0, 20, SEED).labeled();
-
-        dataStream.limit(DATASET_SIZE).forEach(vector -> {
-            cache.put(vector.hashCode(), vector);
-        });
-
-    }
-
-    /** Evaluate trained model. */
-    private void modelEvaluation(IgniteCache dataCache, IgniteModel<Vector, Double> mdl,
-        IgniteBiFunction featureExtractor, IgniteBiFunction lbExtractor){
-        double accuracy = BinaryClassificationEvaluator.evaluate(
-            dataCache,
-            mdl,
-            featureExtractor,
-            lbExtractor
-        ).accuracy();
-
-        BenchmarkUtils.println(">>> Accuracy: " + accuracy);
+    @Override public int getDataSetSize() {
+        return DATASET_SIZE;
     }
 }
